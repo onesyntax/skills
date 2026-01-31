@@ -1,6 +1,4 @@
-# Clean Code Documentation Project
-
-This project contains comprehensive Clean Code documentation based on Uncle Bob's teachings.
+# Clean Code Guidelines
 
 ## TDD Workflow (Mandatory)
 
