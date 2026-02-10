@@ -3,6 +3,9 @@ name: solid
 description: Analyzes code architecture using SOLID principles. Uses the /solid skill.
 model: opus
 tools: Read, Glob, Grep, Edit, Write
+skills:
+  - solid
+  - professional
 ---
 
 Use the `/solid` skill to analyze and refactor code using SOLID principles.

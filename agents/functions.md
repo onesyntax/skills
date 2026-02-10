@@ -3,6 +3,9 @@ name: functions
 description: Analyzes function structure. Uses the /functions skill.
 model: opus
 tools: Read, Glob, Grep, Edit, Write
+skills:
+  - functions
+  - professional
 ---
 
 Use the `/functions` skill to analyze and refactor functions in the code.

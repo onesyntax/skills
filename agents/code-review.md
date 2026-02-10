@@ -3,6 +3,15 @@ name: code-review
 description: Performs comprehensive code quality reviews. Uses the /clean-code-review skill.
 model: opus
 tools: Read, Glob, Grep, Edit, Write
+skills:
+  - clean-code-review
+  - naming
+  - functions
+  - solid
+  - patterns
+  - architecture
+  - tdd
+  - professional
 ---
 
 Use the `/clean-code-review` skill to perform comprehensive code reviews.

@@ -46,6 +46,9 @@ When you identify a refactoring opportunity, use the appropriate specialized ski
 | **Architectural Issues** | `/architecture` | Module boundaries, layer violations, coupling/cohesion problems |
 | **Pattern Opportunities** | `/patterns` | Repeated structures that could use design patterns, anti-patterns to remove |
 | **Component Structure** | `/components` | UI component organization, prop drilling, state management issues |
+| **Acceptance Testing** | `/acceptance-testing` | Adding acceptance tests before refactoring legacy modules |
+| **Functional Refactoring** | `/functional-programming` | Extracting pure functions, removing mutation, applying FP patterns |
+| **Legacy Code** | `/legacy-code` | Boy Scout Rule, characterization tests, incremental improvement |
 | **Comprehensive Review** | `/clean-code-review` | After completing refactoring to verify overall code quality |
 
 ### Skill Usage Guidelines
@@ -118,6 +121,10 @@ For comprehensive Clean Code guidance, combine this skill with:
 - `/architecture` - System architecture and module organization
 - `/patterns` - Design patterns and best practices
 - `/components` - UI component structure and organization
+- `/acceptance-testing` - Acceptance tests as safety nets for refactoring
+- `/functional-programming` - Functional refactoring patterns
+- `/legacy-code` - Incremental improvement of legacy code
+- `/agile` - Continuous improvement as Agile expectation
 - `/clean-code-review` - Comprehensive code quality review
 
 ## Target Code

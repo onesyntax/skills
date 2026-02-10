@@ -3,6 +3,9 @@ name: naming
 description: Analyzes code for naming issues. Uses the /naming skill.
 model: opus
 tools: Read, Glob, Grep, Edit, Write
+skills:
+  - naming
+  - professional
 ---
 
 Use the `/naming` skill to analyze and improve naming in the code.

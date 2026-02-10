@@ -3,6 +3,9 @@ name: architecture
 description: Analyzes software architecture using Clean Architecture principles. Uses the /architecture skill.
 model: opus
 tools: Read, Glob, Grep, Edit, Write
+skills:
+  - architecture
+  - professional
 ---
 
 Use the `/architecture` skill to analyze and design software architecture.

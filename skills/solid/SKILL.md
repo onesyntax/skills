@@ -964,6 +964,246 @@ Remember: Perfect SOLID compliance is not the goal. The goal is a balanced desig
 
 ---
 
+## SOLID in JavaScript and Browser Development
+
+The following sections apply SOLID principles specifically to JavaScript, dynamic languages, and web development, based on the Clean Code in the Browser series by Chris Powers.
+
+### The Project Failure Cycle
+
+Web projects follow a predictable, devastating cycle:
+
+1. **Greenfield Excitement** -- New project, developers enthusiastic
+2. **Rapid Progress** -- Early velocity high, features ship fast
+3. **Cracks Showing** -- Code harder to change, bugs appear
+4. **Velocity Declining** -- Each change takes longer, costs more
+5. **Despair** -- Developers frustrated, morale drops
+6. **Developers Leave** -- The best people leave first
+7. **New Developers Arrive** -- They call it "legacy"
+8. **Rewrite Proposed** -- Everyone agrees to start fresh
+9. **Cycle Repeats** -- Same patterns produce same results
+
+Projects fail because front-end code becomes prohibitively expensive to maintain. SOLID principles break this cycle.
+
+### Why Web Development Culture Resists Discipline
+
+**History**: 99% of web pages historically had errors. Browsers were built to be resilient, rendering broken HTML as best they could. This created a culture of tolerance for poor quality.
+
+**Divided Developers**: Front-end developers were historically not considered "real" programmers. This cultural divide meant front-end code got less engineering rigor.
+
+**Client-Server Challenges**: Maintaining code in an environment you don't control (user's browser) creates unique testing and debugging difficulties.
+
+---
+
+### Command-Query Separation (CQS)
+
+From Bertrand Meyer: every function should be either a **command** (changes state, returns nothing) or a **query** (returns a value, changes nothing). Never both.
+
+> "A function should never return a value AND have side effects."
+
+#### The jQuery Anti-Pattern
+
+jQuery methods like `.val()` violate CQS: calling `.val()` with no arguments is a query (returns value), but `.val("something")` is a command (sets value). Same function, two behaviors.
+
+#### Fixing CQS Violations
+
+**Bad**: `getPaintLeft()` decrements inventory AND returns remaining count.
+
+**Good**: Split into:
+- `usePaint()` -- command, decrements inventory
+- `getPaintLeft()` -- query, returns count without changing state
+
+In dynamic languages, CQS violations are harder to detect because there are no return-type declarations.
+
+---
+
+### SRP Applied to HTML and CSS
+
+SRP applies not just to classes and functions but to HTML elements and CSS.
+
+#### SRP for HTML Elements
+
+Every HTML element should have ONE job: semantic (conveying meaning), structural (controlling layout), content (displaying data), or styling (controlling appearance).
+
+**Bad**:
+```html
+<h1 class="brightBlue" onclick="doSomething()">Title</h1>
+```
+This H1 has three jobs: semantic meaning, styling, and behavior.
+
+**Good**: Extract styling into CSS, behavior into a separate interactive element.
+
+#### The Presenter Pattern for Templates
+
+Templates should ONLY render HTML. Business logic should live in a "presenter" object that prepares data for the template. This prevents templates from becoming logic-heavy.
+
+#### BEM Methodology for CSS
+
+Block-Element-Modifier naming makes it clear which styles belong to which component. Each CSS rule has a clear, single responsibility.
+
+---
+
+### OCP via Duck Typing
+
+In JavaScript, OCP violations emerge naturally through escalating requirements that add if/else branches.
+
+#### The Greet Function Example
+
+A greeting function starts by hard-coding "Mr." as a title. As requirements expand (Mrs., Dr., Reverend, military titles), adding if/else branches violates OCP.
+
+**Solution**: Move the `title()` responsibility onto the user object itself. Any object that duck-types to respond to `title()` can be greeted -- extension through duck typing rather than modification through branching.
+
+#### OCP Warnings
+
+OCP requires knowing ahead of time what will change. When you guess wrong, you invest energy in flexibility that never gets used. It requires team communication and discernment.
+
+> "Extensions will always be cleaner than modifications."
+
+---
+
+### LSP in Dynamic Languages
+
+LSP may be MORE important in dynamically typed languages than statically typed ones. In Java/C#, the compiler catches type mismatches. In JavaScript, there is no compiler safety net.
+
+#### Implicit Types
+
+Even without class declarations, JavaScript code creates "implicit types" through naming conventions and usage patterns. When a function accepts a parameter called `user`, there is an implicit contract. Violating that implicit contract is an LSP violation.
+
+> "Explicit beats implicit every time."
+
+The growing adoption of TypeScript and Flow is a direct response to the danger of implicit types in JavaScript.
+
+---
+
+### ISP Without Interfaces
+
+JavaScript has no `interface` keyword. How do you apply ISP?
+
+#### Solution: Extraction
+
+Create separate wrapper classes that act as client-specific interfaces:
+
+```javascript
+// Instead of one bloated User class for all clients:
+class MemberUser {
+  constructor(user) { this.user = user; }
+  get name() { return this.user.name; }
+  get address() { return this.user.address; }
+}
+
+class AdminUser {
+  constructor(user) { this.user = user; }
+  get name() { return this.user.name; }
+  get ldapUserName() { return this.user.ldapUserName; }
+}
+
+class TrialUser {
+  constructor(user) { this.user = user; }
+  get name() { return this.user.name; }
+  get daysLeftInTrial() { return this.user.daysLeftInTrial; }
+}
+```
+
+Each wrapper exposes only what its client needs.
+
+> "If we're doing refactor without passing tests, we're not really refactoring at all. We're really just changing stuff."
+
+---
+
+### DIP with Constructor Injection
+
+In JavaScript, DIP is achieved through constructor injection:
+
+```javascript
+// Bad: tight coupling
+class House {
+  constructor() {
+    this.thermostat = new NestThermostat();
+    this.heater = new GasFurnace();
+  }
+}
+
+// Good: dependency inversion via injection
+class House {
+  constructor(thermostat, heater, cooler) {
+    this.thermostat = thermostat;
+    this.heater = heater;
+    this.cooler = cooler;
+  }
+}
+```
+
+**Where to Initialize Dependencies**: The concrete instances should be assembled at the composition root -- possibly in a configuration layer or main/index.js file.
+
+> "You'll know you're doing it right if there's a clear distinction between your high-level policy classes and your low-level implementation classes, and never the two shall meet."
+
+---
+
+### Readiness Over Agility
+
+Business agility is the end goal, but clean code, solid test bases, and well-factored abstractions create the **readiness** that makes agility possible.
+
+> "I don't want my teams to be efficient. I want them to be effective. Get the right work done as fast as possible, even if it takes the whole team."
+
+#### Anti-Patterns
+
+- **Rigid Roles**: "It's not my job" creates mini-silos within teams
+- **Static Charters**: Narrow team responsibilities miss high-value opportunities
+- For fluid teams, code bases must be accessible to non-original-team members through high test coverage, bulletproof pipelines, and essential documentation
+
+---
+
+### Flow State and Abstractions
+
+Mark Seemann's "Humane Code" teaching: the brain holds only seven pieces of information at once. Abstractions let us think at a higher level, fitting bigger concepts into those seven slots. Without abstractions, flow state is impossible.
+
+**Multitasking Destroys Flow**: Three one-month projects done simultaneously take four months. Done sequentially with prioritization, they take three months AND the highest-priority project ships after month one.
+
+> "We do less to get more done."
+
+---
+
+### The Lone Wolf Anti-Pattern
+
+**Lone Wolf Characteristics**:
+- Get feedback on code very late or not at all
+- Avoid collaboration
+- Leap at greenfield builds, disappear for maintenance
+- Skip tests and leading practices
+
+> "If you want to be a 10X developer, all you have to do is write enough crufty code to keep 10 other people busy fixing it."
+
+> "It's not about getting the most done. It's about getting the best of everyone into everything that we do."
+
+---
+
+### Shared Understanding Over Documentation
+
+> "It's not that teams need documentation. What a team needs is shared understanding."
+
+**Moving Documentation Closer to Code**:
+1. Move from wikis into Markdown files in the project
+2. Make documentation executable (Cucumber/Gherkin)
+3. Use stub data as living documentation of API schemas
+4. "The best tool for documenting code is more code"
+
+---
+
+### Additional Browser Series Quotes
+
+> "Programming is a team sport."
+
+> "There is no them, it is only us." (on the front-end/back-end divide)
+
+> "Code as liability, not asset." (minimize code to minimize maintenance)
+
+> "The real process you use to write code is the one you use to fix hot production bugs."
+
+> "Shared understandings can quickly become unshared delusions."
+
+> "Focus on blend, focus on unity, focus on harmony. Let your team sing!"
+
+---
+
 ## Code to Analyze
 
 $ARGUMENTS
@@ -1013,4 +1253,9 @@ Classes are NOT complete until:
 - **/professional** - Apply professional coding standards and quality requirements
 - **/functions** - Ensure methods within classes follow function principles
 - **/naming** - Ensure class and method names reveal intent
+- **/architecture** - SOLID principles at the architectural level (ISP, LSP, OCP across boundaries)
+- **/functional-programming** - Functional SOLID: protocols as interfaces, modules as classes
+- **/acceptance-testing** - DIP enables fixture injection for testability
+- **/agile** - SOLID enables the inexpensive adaptability Agile demands
+- **/legacy-code** - SOLID violations as targets for acts of kindness
 - **/clean-code-review** - Run comprehensive review after refactoring

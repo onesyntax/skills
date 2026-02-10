@@ -65,6 +65,10 @@ After writing any code, automatically perform a self-review:
 | `/patterns` | Design Patterns | Identifying/applying patterns |
 | `/professional` | Professional standards | Ethics, estimates, commitments |
 | `/components` | Component design | Module boundaries, cohesion, coupling |
+| `/acceptance-testing` | Acceptance testing | ATDD, testing pyramid, BDD, fixtures |
+| `/agile` | Agile practices | Velocity, planning, CI, Definition of Done |
+| `/functional-programming` | Functional programming | Pure functions, immutability, FP patterns |
+| `/legacy-code` | Legacy code | Boy Scout Rule, characterization tests, strangulation |
 | `/clean-code-review` | Comprehensive review | Before commit/merge |
 | `/refactor-suggestion` | Refactoring guidance | Improving existing code |
 | `/teach-concept` | Teaching concepts | Learning Clean Code principles |

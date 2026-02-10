@@ -337,4 +337,8 @@ This comprehensive code review workflow integrates with all Clean Code skills:
 - **/solid** - SOLID principles analysis for class design, cohesion, and coupling
 - **/architecture** - Clean Architecture patterns, boundaries, and dependency management
 - **/tdd** - Test quality, coverage, and TDD compliance
+- **/acceptance-testing** - Acceptance test quality, testing pyramid compliance, fixture design
+- **/agile** - Definition of Done rigor, velocity honesty, technical practice compliance
+- **/functional-programming** - Purity, immutability, side effect isolation, functional SOLID
+- **/legacy-code** - Boy Scout Rule compliance, characterization tests, strangulation opportunities
 - **/professional** - Professional standards, responsibility, and ethics

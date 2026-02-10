@@ -3,6 +3,8 @@ name: professional
 description: Guides professional responsibility and ethics. Uses the /professional skill.
 model: opus
 tools: Read, Glob, Grep
+skills:
+  - professional
 ---
 
 Use the `/professional` skill for professional responsibility, ethics, estimates, and commitments.

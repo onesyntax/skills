@@ -1204,6 +1204,327 @@ The goal is not perfect adherence to all principles, but a system that:
 
 ---
 
+## The Constancy of Architecture
+
+Architecture rules are independent of ALL variables -- hardware, languages, frameworks, tools. The rules of software have not changed since 1945.
+
+> "The rules of software are independent of every other variable. The hardware has changed by a factor of ten to the twenty-second since I started in this business, and the rules haven't changed at all."
+
+Hardware has improved by approximately 60 septillion (60 x 10^24) times since the 1960s. Despite this astronomical change, software architecture rules remain identical. Software is still made of sequence, selection, and iteration -- nothing else has been added since those were formalized.
+
+**Architecture is NOT about adapting to new technology.** The rules that governed Fortran programs in the 1960s still govern microservices today.
+
+### Architecture = Design = Programming: The Continuum
+
+There is no firm dividing line between architecture, design, and programming. They form a continuum.
+
+- Architecture is not a separate activity performed by separate people
+- When you are programming, you are making architectural decisions
+- When you are designing, you are thinking about code
+- The distinction between "architect" and "programmer" is misleading
+
+> "The architect who does not write code is no architect at all."
+
+---
+
+## The Two Values of Software
+
+Software has exactly two values: **behavior** and **structure**. Structure (the ability to change) is MORE important than behavior (what the software currently does).
+
+- A system that works perfectly but cannot be changed is worthless -- because requirements WILL change
+- A system that does not work but CAN be changed is valuable -- because you can make it work
+- Most managers prioritize behavior (urgent) over structure (important) -- this is the wrong priority
+
+> "There are two values of software: the value of its behavior, and the value of its structure. And you might be surprised to learn that of the two, the value of the structure is the greater."
+
+### Eisenhower Matrix Applied to Architecture
+
+- Behavior is URGENT but not always IMPORTANT
+- Architecture is IMPORTANT but not always URGENT
+- The urgent drives out the important unless architects fight back
+- Architecture never feels pressing until it is too late
+
+---
+
+## The Three Paradigms as Architectural Foundations
+
+The three programming paradigms are structural elements of the architectural building:
+
+### Structured Programming = Concrete Blocks
+
+- Provides the basic control flow: sequence, selection, iteration
+- Dijkstra proved these three are sufficient for any computation
+- Architecture at the algorithmic level
+
+### Object-Oriented Programming = Girders and Beams
+
+- The REAL power of OO is NOT encapsulation, NOT inheritance
+- The real power is **SAFE POLYMORPHISM** -- the ability to invert source code dependencies
+- OO allows source code dependencies to point AGAINST the flow of control
+- This is what makes the Dependency Rule possible
+- Without OO's dependency inversion capability, Clean Architecture would be impossible
+
+### Functional Programming = Plumbing
+
+- Provides immutability -- data that cannot change
+- Eliminates race conditions, deadlocks, concurrent update problems
+- Makes data transport safe within the architecture
+- Event Sourcing is the architectural manifestation of functional programming
+
+### What Each Paradigm Removes
+
+- Structured programming removes unrestrained goto
+- OO removes function pointers (replaces with safe polymorphism)
+- FP removes assignment (removes mutable state)
+
+> "The three paradigms together remove goto, remove function pointers, and remove assignment. And what's left? Not much."
+
+---
+
+## Event Sourcing
+
+Event Sourcing stores **transactions (events)** rather than state. Instead of mutating a record, you append a new event.
+
+### CRUD Becomes CR
+
+- Traditional: Create, Read, Update, Delete
+- Event Sourcing: Create, Read only
+- No Update or Delete -- only new events representing changes
+- Current state is computed by replaying all events from the beginning
+
+> "CRUD becomes CR. There is no update and there is no delete. You only create new records, and you read existing ones."
+
+### Git as Event Sourcing
+
+- Git is event sourcing applied to source code
+- You never modify a commit -- only add new commits
+- Current state = result of applying all commits in sequence
+- Branching, merging, reverting possible because event history is immutable
+- Can reconstruct any past state by replaying events
+
+### Architectural Implications
+
+- No mutable state = no race conditions
+- No concurrent update problems (no updates)
+- No need for traditional locks or transactions
+- Storage is the main concern (event logs grow without bound, but storage is cheap)
+- The vast majority of business rules can be purely functional
+
+---
+
+## The Decoupling Modes Spectrum
+
+A spectrum from tightest to loosest coupling:
+
+1. **Static Monolith** -- everything compiled and linked together
+2. **Dynamic Linking** -- DLLs, JARs, shared libraries loaded at runtime
+3. **Threads** -- separate threads within one process
+4. **Processes** -- separate OS processes via IPC
+5. **Services/Microservices** -- separate deployable units via network
+
+**Architecture should be INDEPENDENT of the decoupling mode.** You should be able to move up and down this spectrum without changing the architecture. The same source code boundaries should work whether deployed as monolith or microservices.
+
+> "Microservices are a deployment strategy, not an architectural strategy."
+
+---
+
+## The Main Module
+
+The Main module is the DIRTIEST, LOWEST-LEVEL module in the system.
+
+### Characteristics
+
+- Where ALL SOLID principles are violated -- and that is ACCEPTABLE
+- Creates concrete instances and wires them together
+- Knows about everything (all concrete classes, all frameworks)
+- ALL dependencies point AWAY from Main -- nothing depends on Main
+- It is the "ultimate detail" -- the lowest of the low
+
+### Multiple Main Modules
+
+You can have MULTIPLE main modules for different configurations:
+- One Main for production deployment
+- One Main for testing/QA
+- One Main for development
+- Each wires up different concrete implementations
+- Powerful configuration strategy
+
+### Tests as the Lowest-Level Module
+
+Tests are even lower level than Main:
+- Tests depend on everything but nothing depends on tests
+- They follow the dependency rule: all test dependencies point inward
+- Changes to tests never affect production code
+
+---
+
+## Expanded Boundary Concepts
+
+### Architecture is About Productivity, Not Behavior
+
+> "The purpose of architecture is not to get the system to work. The purpose of architecture is to make the system productive for the developers."
+
+### Independence from Three Forces
+
+Boundaries should be drawn to achieve independence from:
+
+1. **Change Frequency** -- Things that change at different rates should be separated
+2. **Cost of Change** -- Things with different costs of getting wrong should be separated
+3. **Risk** -- Things with different risk profiles should be separated
+
+Higher risk code should depend on nothing; everything should depend on it.
+
+### Independence Through Irrelevance
+
+Use cases that are unrelated should have NO connections between them. Not just loose coupling -- NO coupling. If something is irrelevant to you, you should not depend on it at all.
+
+### Source Code Dependencies as Propagation Pathways
+
+Source code dependencies define three things:
+1. **Compilation order** -- what must be compiled before what
+2. **Release order** -- what must be released before what
+3. **Change propagation pathway** -- when something changes, what else might need to change
+
+### The Soap Bubble Analogy
+
+Boundaries are like soap bubbles or cell membranes:
+- Thin but critical
+- Selectively permeable
+- Define inside and outside
+- Protect interior from exterior
+- FLEXIBLE -- can reshape without breaking
+
+---
+
+## Components vs. Architectural Elements
+
+### Components
+
+The smallest independently deployable units (JARs, DLLs, gems):
+- Statically linked at compile time, or dynamically linked at runtime, or completely unlinked services
+- Always: cohesive bundles of functions
+
+### Architectural Elements
+
+GROUPINGS of components:
+- A microservice is an architectural element containing many components
+- Architectural boundaries cut across component RELATIONSHIPS, never through components
+- Components define "fracture lines" -- potential places where boundaries can be drawn
+
+> "Components provide the structure for all the possible different architectures and allow us to decide LATER what the architectural boundaries of the system are actually going to be."
+
+### The Key Strategy
+
+1. Do the component structure FIRST
+2. Those components define the fracture lines
+3. LATER, when you know more, draw the architectural boundaries along those fracture lines
+4. This is how you DEFER the microservices/monolith decision
+
+---
+
+## SOLID at the Architectural Level
+
+### ISP Origin Story
+
+The Interface Segregation Principle was born at Xerox:
+- One giant interface used by all clients of a copier/printer system
+- Compile times were 45 minutes because ANY change forced everything to recompile
+- Uncle Bob segregated the interface into smaller, client-specific interfaces
+- Compile times dropped to about 5 minutes
+- At the architectural level: don't depend on frameworks, libraries, or services you don't fully use
+
+### LSP at the Architectural Level
+
+Beyond class inheritance -- conformance to interfaces across deployment boundaries:
+- Services conforming to a common interface ARE subtypes
+- If not properly substitutable, you get architectural coupling via special-case if-statements
+- Forces you to abandon independent deployability
+
+### OCP via Data-Driven Systems
+
+- Drive the system with data rather than code changes
+- Configuration files, rule engines, data tables
+- OCP at scale: extend by changing data, not code
+- Warning: Greenspan's 10th Rule -- accidentally building a full programming language
+
+### Conway's Law and Inverse Conway's Law
+
+**Conway's Law:** Organizations produce designs that copy their communication structures.
+
+**Inverse Conway's Law (Uncle Bob's interpretation):**
+- Architecture should reflect the USER organization, not the DEVELOPER organization
+- SRP says modules should be responsible to actors (user roles)
+- Organize code by user role/actor rather than by technical layer
+
+---
+
+## The Web and Database as Non-Architectural Events
+
+### The Web
+
+- Late 1990s: everyone thought the web was a massive architectural change
+- The .com bubble burst in 2001
+- It took 10 years to realize: the web is just an I/O device
+- Similar to old IBM 3270 green-screen terminals
+- Web code is low-level code -- keep it away from business rules
+
+> "It took us a long time, but we finally realized that this big architectural change over the web was not, in fact, an architectural change at all."
+
+### The Database
+
+- Database vendors spent decades marketing databases as THE center of the enterprise
+- In reality, the database is an I/O device -- it stores and retrieves data
+- The database should be a DETAIL, plugged in at the outer layer
+- Business rules should not know which database they use
+
+---
+
+## Framework Commitment Asymmetry
+
+> "You are committed to that framework. But how committed is that framework to you?"
+
+When you commit to a framework:
+- YOU make a huge commitment
+- The framework makes NO commitment to you
+- The framework author can change direction, abandon the project, or deprecate features
+- You are left dealing with the consequences
+
+**Defensive Architecture:**
+- Keep frameworks at arm's length
+- Keep frameworks in the lowest-level position possible
+- Never let framework code infiltrate business rules
+- Use frameworks carefully and wisely
+
+---
+
+## The Tortoise and the Hare
+
+The hare (rushing, no architecture, no tests) starts fast. The tortoise (TDD, clean architecture, discipline) starts slower. The tortoise always wins because the hare eventually drowns in its own mess.
+
+Jason Gorman's TDD experiment: same kata performed multiple times, half with TDD, half without. TDD was consistently about 10% FASTER but always FELT slower.
+
+> "The only way to go fast is to go well."
+
+> "TDD was about 10% faster every single time, but it always, always felt slower."
+
+---
+
+## Additional Memorable Quotes
+
+> "The goal of software architecture is to minimize the human resources required to build and maintain the system."
+
+> "Software was invented before computers."
+
+> "The real power of object-oriented programming is the ability to invert source code dependencies against the flow of control."
+
+> "Functional programming is the plumbing of our architectural building."
+
+> "A good architect keeps as many options open as possible, for as long as possible."
+
+> "We never want things that are hard to change to depend upon things that we intend to be easy to change."
+
+---
+
 ## Feature to Implement
 
 $ARGUMENTS
@@ -1242,4 +1563,12 @@ $ARGUMENTS
 
 ## Related Skills
 
-- **/professional** - Apply professional standards workflow for code quality, naming conventions, formatting, and maintainability
+- **/solid** - SOLID principles for component and class design within architectural boundaries
+- **/components** - Component cohesion and coupling principles (REP, CCP, CRP, ADP, SDP, SAP)
+- **/tdd** - TDD enables fearless refactoring and the tortoise's advantage
+- **/functional-programming** - FP provides immutability and event sourcing foundations
+- **/acceptance-testing** - Architecture must support testability without UI
+- **/agile** - Agile practices require clean architecture for sustainable velocity
+- **/legacy-code** - Strangulation technique uses architectural boundaries
+- **/professional** - Apply professional standards workflow for code quality
+- **/clean-code-review** - Verify architectural decisions after implementation

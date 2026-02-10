@@ -3,6 +3,9 @@ name: patterns
 description: Guides design pattern identification and application. Uses the /patterns skill.
 model: opus
 tools: Read, Glob, Grep, Edit, Write
+skills:
+  - patterns
+  - professional
 ---
 
 Use the `/patterns` skill to identify and apply design patterns appropriately.

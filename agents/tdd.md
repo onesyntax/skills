@@ -3,6 +3,11 @@ name: tdd
 description: Guides test-driven development practices. Uses the /tdd skill.
 model: opus
 tools: Read, Glob, Grep, Bash, Edit, Write
+skills:
+  - tdd
+  - naming
+  - functions
+  - professional
 ---
 
 Use the `/tdd` skill to guide test-driven development practices.

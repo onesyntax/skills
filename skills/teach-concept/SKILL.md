@@ -33,6 +33,10 @@ When teaching specific concepts, load the appropriate specialized skill for comp
 | Patterns | `/patterns` | Design patterns, state machines, factories |
 | Professionalism | `/professional` | Estimates, saying no, ethics, programmer's oath |
 | Components | `/components` | Component cohesion, coupling, REP, CCP, CRP |
+| Acceptance Testing | `/acceptance-testing` | ATDD, testing pyramid, BDD, fixtures, stakeholder communication |
+| Agile | `/agile` | Agile practices, velocity, planning, CI, Definition of Done |
+| Functional Programming | `/functional-programming` | Pure functions, immutability, FP patterns, functional SOLID |
+| Legacy Code | `/legacy-code` | Boy Scout Rule, characterization tests, strangulation technique |
 | Code Review | `/clean-code-review` | Reviewing code for clean code principles |
 
 ### How to Use Related Skills
@@ -49,6 +53,10 @@ When the user asks about a concept:
    - For patterns: `Skill: patterns`
    - For professionalism: `Skill: professional`
    - For components: `Skill: components`
+   - For acceptance testing: `Skill: acceptance-testing`
+   - For agile: `Skill: agile`
+   - For functional programming: `Skill: functional-programming`
+   - For legacy code: `Skill: legacy-code`
    - For review: `Skill: clean-code-review`
 3. **Use the skill's content** to provide comprehensive teaching
 
@@ -103,6 +111,39 @@ When the user asks about a concept:
 - **observer** - Observer pattern
 - **state** - State pattern and FSMs
 
+### Acceptance Testing
+
+- **acceptance-testing** - ATDD and acceptance test workflow
+- **testing-pyramid** - Unit, functional, acceptance, UI test layers
+- **bdd** - Behavior-Driven Development and Given/When/Then
+- **fixtures** - Connecting acceptance tests to production code
+- **fitnesse** - Wiki-based acceptance testing framework
+
+### Agile
+
+- **agile** - Agile principles and practices
+- **velocity** - Measuring and maintaining honest velocity
+- **definition-of-done** - What "done" really means
+- **planning-game** - Estimation and iteration planning
+- **continuous-integration** - CI practices and pipeline discipline
+- **flaccid-scrum** - How Agile goes wrong without technical practices
+
+### Functional Programming
+
+- **functional-programming** - FP principles and practices
+- **pure-functions** - Referential transparency and side effects
+- **immutability** - State management without mutation
+- **map-filter-reduce** - Higher-order function patterns
+- **functional-solid** - SOLID principles in functional code
+- **composition** - Building large from small through function composition
+
+### Legacy Code
+
+- **legacy-code** - Working with old, untested code
+- **boy-scout-rule** - Always leave code cleaner than you found it
+- **characterization-tests** - Golden standard testing for legacy modules
+- **strangulation** - Safely rewriting surrounded legacy code
+
 ### Professional
 
 - **estimates** - How to estimate responsibly
@@ -127,4 +168,8 @@ The following skills provide comprehensive content for teaching Clean Code conce
 | Patterns | `/patterns` | Design patterns for clean code |
 | Professional | `/professional` | Professional ethics and practices |
 | Components | `/components` | Component design and cohesion principles |
+| Acceptance Testing | `/acceptance-testing` | ATDD, testing pyramid, BDD, fixtures |
+| Agile | `/agile` | Agile practices, velocity, planning, CI |
+| Functional Programming | `/functional-programming` | Pure functions, immutability, FP patterns |
+| Legacy Code | `/legacy-code` | Boy Scout Rule, characterization tests, strangulation |
 | Clean Code Review | `/clean-code-review` | Code review using clean code standards |
