@@ -9,336 +9,181 @@ allowed-tools: Read, Grep, Glob
 argument-hint: [file or directory path]
 ---
 
-# Code Review Workflow
+# Clean Code Review
 
-You are a comprehensive Clean Code reviewer, orchestrating analysis across all Clean Code principles taught by Uncle Bob. Follow this workflow systematically when reviewing code.
+Comprehensive code review against all Clean Code principles. This is the final quality gate — code is NOT complete until this review passes with no critical issues.
 
-## MANDATORY ACTIVATION
+For full review walkthroughs with before/after examples, read `references/extended-examples.md`.
 
-**This skill MUST be activated:**
+## When to Activate
+
 - After ANY code modification task is completed
 - Before marking ANY implementation work as "done"
 - Before committing code
 - After TDD cycles complete
 - After refactoring
 
-**Code is NOT complete until this review passes with no CRITICAL issues.**
-
 ## Review Philosophy
 
-Clean code is code that is easy to read, understand, and modify. As Uncle Bob says: "The ratio of time spent reading versus writing code is well over 10 to 1. We are constantly reading old code as part of the effort to write new code."
+Clean code is code that is easy to read, understand, and modify. The ratio of time spent reading versus writing code is well over 10 to 1. Every review decision should optimize for readability first, because that's what developers spend most of their time doing.
 
-## Workflow Steps
-
-### Step 1: Naming Check
-**Use /naming workflow for comprehensive naming analysis**
-
-Check all names against these criteria:
-- [ ] Names reveal intent
-- [ ] No disinformation or misleading names
-- [ ] Meaningful distinctions (not number-series or noise words)
-- [ ] Pronounceable names
-- [ ] Searchable names (no magic numbers/strings)
-- [ ] No encodings (Hungarian notation, member prefixes)
-- [ ] Class names are nouns, method names are verbs
-- [ ] One word per concept, consistent vocabulary
-
-### Step 2: Functions Check
-**Use /functions workflow for comprehensive function analysis**
-
-Check all functions against these criteria:
-- [ ] Functions are small (< 20 lines ideal)
-- [ ] Functions do ONE thing
-- [ ] One level of abstraction per function
-- [ ] Step-down rule followed (high to low abstraction)
-- [ ] Few arguments (0-2 ideal, 3 is suspicious, >3 requires justification)
-- [ ] No flag arguments
-- [ ] No side effects
-- [ ] Command-query separation
-- [ ] Prefer exceptions to error codes
-- [ ] DRY - no duplication
-
-### Step 3: Classes Check
-**Use /solid workflow for comprehensive class and SOLID analysis**
-
-Check all classes against these criteria:
-- [ ] Classes are small (single responsibility)
-- [ ] High cohesion
-- [ ] Low coupling
-- [ ] SOLID principles followed:
-  - Single Responsibility Principle (SRP)
-  - Open-Closed Principle (OCP)
-  - Liskov Substitution Principle (LSP)
-  - Interface Segregation Principle (ISP)
-  - Dependency Inversion Principle (DIP)
-- [ ] Proper encapsulation
-- [ ] Law of Demeter respected
-
-### Step 4: Patterns Check
-**Use /architecture workflow for design patterns and architecture analysis**
-
-Check patterns against these criteria:
-- [ ] Patterns used appropriately (not over-engineered)
-- [ ] Pattern implementations are correct
-- [ ] No unnecessary complexity
-- [ ] Clear separation of concerns
-- [ ] Dependencies point inward
-- [ ] Business logic isolated from frameworks
-- [ ] Appropriate abstraction layers
-
-### Step 5: Error Handling Check
-Review error handling practices:
-- [ ] Use exceptions, not return codes
-- [ ] Write try-catch-finally first
-- [ ] Provide context with exceptions
-- [ ] Define exception classes by caller's needs
-- [ ] Don't return null
-- [ ] Don't pass null
-
-### Step 6: Comments Check
-Review comment quality and necessity:
-- [ ] Code is self-documenting (comments are a last resort)
-- [ ] No redundant comments
-- [ ] No misleading comments
-- [ ] No commented-out code
-- [ ] No noise comments
-- [ ] Good: Legal, informative, intent, clarification, warning, TODO
-- [ ] Bad: Mumbling, redundant, mandated, journal, position markers
-
-### Step 7: Formatting Check
-Review code formatting and organization:
-- [ ] Consistent style throughout
-- [ ] Vertical openness between concepts
-- [ ] Vertical density for related code
-- [ ] Variable declarations close to usage
-- [ ] Dependent functions vertically close
-- [ ] Caller above callee
-- [ ] Reasonable line length (< 120 chars)
-- [ ] Horizontal alignment only when it aids readability
-
-### Step 8: Tests Check
-**Use /tdd workflow for comprehensive test analysis**
-
-Review test quality:
-- [ ] Tests exist for functionality
-- [ ] Tests are clean (FIRST: Fast, Independent, Repeatable, Self-validating, Timely)
-- [ ] One concept per test
-- [ ] Test coverage is adequate
-- [ ] Tests are readable
-- [ ] Tests follow AAA pattern (Arrange, Act, Assert)
-
-### Step 9: Architecture Check
-**Use /architecture workflow for architecture analysis**
-
-Review architectural decisions:
-- [ ] Clear separation of concerns
-- [ ] Dependencies point inward
-- [ ] Business logic isolated from frameworks
-- [ ] Appropriate abstraction layers
-- [ ] Boundaries properly defined
-- [ ] Use cases and entities properly structured
-
-### Step 10: Professional Standards
-**Use /professional workflow for professional standards verification**
-
-Verify code meets professional standards:
-- [ ] Code demonstrates professional responsibility
-- [ ] No harmful code
-- [ ] Code is my best work
-- [ ] Quick, sure, repeatable proof (tests) exist
-- [ ] Code is clean and maintainable
-- [ ] Knowledge is shared (others can cover)
+A review is not a gatekeeping exercise — it's a collaborative quality check. The goal is to catch issues early, when they're cheap to fix, not to prove the code is bad.
 
 ---
 
-## Review Process
+## The Review Checklist
 
-### First Pass - Structure
-- Scan file/module structure
-- Note overall organization
-- Identify major components
-- Check if architecture screams its intent
+Work through each dimension. For dimensions covered by dedicated skills, delegate to that skill for deep analysis.
 
-### Second Pass - Functions
-- Check each function for size and responsibility
-- Look for duplication
-- Evaluate naming
-- Verify command-query separation
+### 1. Naming
+**Delegate to `/naming` for deep analysis.**
 
-### Third Pass - Classes/Modules
-- Evaluate cohesion and coupling
-- Check SOLID compliance
-- Review encapsulation
-- Look for Law of Demeter violations
+- Names reveal intent — you can understand what something does without reading the implementation
+- No disinformation or misleading names
+- Meaningful distinctions (not number-series like `a1, a2` or noise words like `data, info`)
+- Pronounceable and searchable names (no magic numbers or strings)
+- No encodings (Hungarian notation, member prefixes)
+- Class names are nouns, method names are verbs
+- One word per concept, consistent vocabulary
 
-### Fourth Pass - Details
-- Comments quality
-- Error handling
-- Formatting consistency
-- Magic numbers and strings
+### 2. Functions
+**Delegate to `/functions` for deep analysis.**
 
-### Fifth Pass - Tests
-- Review test coverage
-- Evaluate test quality
-- Check test organization
-- Verify test cleanliness
+- Functions are small (under 20 lines ideal)
+- Functions do ONE thing
+- One level of abstraction per function
+- Step-down rule followed (high to low abstraction)
+- Few arguments (0-2 ideal, 3 suspicious, more than 3 requires justification)
+- No flag arguments
+- No side effects
+- Command-query separation maintained
+- Prefer exceptions to error codes
+- DRY — no duplication
 
----
+### 3. Classes and Objects
+**Delegate to `/solid` for deep analysis.**
 
-## Comprehensive Review Checklist
-
-### 1. Naming (See: /naming skill)
-- [ ] Names reveal intent
-- [ ] No disinformation or misleading names
-- [ ] Meaningful distinctions (not number-series or noise words)
-- [ ] Pronounceable names
-- [ ] Searchable names (no magic numbers/strings)
-- [ ] No encodings (Hungarian notation, member prefixes)
-- [ ] Class names are nouns, method names are verbs
-- [ ] One word per concept, consistent vocabulary
-
-### 2. Functions (See: /functions skill)
-- [ ] Functions are small (< 20 lines ideal)
-- [ ] Functions do ONE thing
-- [ ] One level of abstraction per function
-- [ ] Step-down rule followed (high to low abstraction)
-- [ ] Few arguments (0-2 ideal, 3 is suspicious, >3 requires justification)
-- [ ] No flag arguments
-- [ ] No side effects
-- [ ] Command-query separation
-- [ ] Prefer exceptions to error codes
-- [ ] DRY - no duplication
-
-### 3. Classes & Objects (See: /solid skill)
-- [ ] Classes are small (single responsibility)
-- [ ] High cohesion
-- [ ] Low coupling
-- [ ] SOLID principles followed
-- [ ] Proper encapsulation
-- [ ] Law of Demeter respected
+- Classes are small (single responsibility)
+- High cohesion — methods use most instance variables
+- Low coupling — minimal dependencies on other classes
+- SOLID principles followed (SRP, OCP, LSP, ISP, DIP)
+- Proper encapsulation — implementation details hidden
+- Law of Demeter respected — don't talk to strangers
 
 ### 4. Error Handling
-- [ ] Use exceptions, not return codes
-- [ ] Write try-catch-finally first
-- [ ] Provide context with exceptions
-- [ ] Define exception classes by caller's needs
-- [ ] Don't return null
-- [ ] Don't pass null
+
+- Use exceptions, not return codes
+- Write try-catch-finally first when dealing with operations that can fail
+- Provide context with exceptions — enough information for the caller to understand what went wrong
+- Define exception classes by the caller's needs, not by the source of the error
+- Don't return null — use special case objects, empty collections, or optionals
+- Don't pass null — validate inputs at boundaries instead
 
 ### 5. Comments
-- [ ] Code is self-documenting (comments are a last resort)
-- [ ] No redundant comments
-- [ ] No misleading comments
-- [ ] No commented-out code
-- [ ] No noise comments
-- [ ] Good: Legal, informative, intent, clarification, warning, TODO
-- [ ] Bad: Mumbling, redundant, mandated, journal, position markers
+
+Code should be self-documenting. Comments are a last resort — they compensate for failure to express intent in code.
+
+**Acceptable comments:** legal headers, informative (regex explanations), intent clarification, warnings, TODOs
+
+**Red flags:** redundant comments that repeat the code, misleading comments, commented-out code (delete it — version control remembers), noise comments (`// default constructor`), journal comments, position markers (`// END SECTION`)
 
 ### 6. Formatting
-- [ ] Consistent style throughout
-- [ ] Vertical openness between concepts
-- [ ] Vertical density for related code
-- [ ] Variable declarations close to usage
-- [ ] Dependent functions vertically close
-- [ ] Caller above callee
-- [ ] Reasonable line length (< 120 chars)
-- [ ] Horizontal alignment only when it aids readability
 
-### 7. Tests (See: /tdd skill)
-- [ ] Tests exist for functionality
-- [ ] Tests are clean (FIRST: Fast, Independent, Repeatable, Self-validating, Timely)
-- [ ] One concept per test
-- [ ] Test coverage is adequate
-- [ ] Tests are readable
+- Consistent style throughout the codebase
+- Vertical openness between concepts (blank lines separate thoughts)
+- Vertical density for related code (no unnecessary blank lines within a concept)
+- Variable declarations close to usage
+- Dependent functions vertically close, caller above callee
+- Reasonable line length (under 120 characters)
+- Horizontal alignment only when it genuinely aids readability
 
-### 8. Architecture (See: /architecture skill)
-- [ ] Clear separation of concerns
-- [ ] Dependencies point inward
-- [ ] Business logic isolated from frameworks
-- [ ] Appropriate abstraction layers
+### 7. Tests
+**Delegate to `/tdd` for deep analysis.**
 
-### 9. Design Patterns (See: /architecture skill)
-- [ ] Patterns used appropriately (not over-engineered)
-- [ ] Pattern implementations are correct
-- [ ] No unnecessary complexity
+- Tests exist for all functionality
+- Tests follow FIRST: Fast, Independent, Repeatable, Self-validating, Timely
+- One concept per test
+- Adequate coverage of edge cases and error paths
+- Tests are readable — they tell a story (Arrange, Act, Assert)
 
----
+### 8. Architecture
+**Delegate to `/architecture` for deep analysis.**
 
-## Output Format
+- Clear separation of concerns
+- Dependencies point inward (toward business rules)
+- Business logic isolated from frameworks and infrastructure
+- Appropriate abstraction layers
+- Boundaries properly defined between components
 
-For each issue found:
+### 9. Design Patterns
+**Delegate to `/patterns` for deep analysis.**
 
-```
-### [SEVERITY] Issue Title
-**Location:** file:line_number
-**Principle:** Which Clean Code principle is violated
-**Problem:** Clear description of the issue
-**Impact:** Why this matters
-**Suggestion:** How to fix it
-**Example:** (if helpful) Before/after code
-```
+- Patterns used appropriately — solving a real problem, not showing off
+- Pattern implementations are correct and complete
+- No unnecessary complexity or premature abstraction
 
-Severity levels:
-- **CRITICAL**: Significantly impacts maintainability or correctness
-- **WARNING**: Should be addressed but not urgent
-- **SUGGESTION**: Nice to have improvement
+### 10. Professional Standards
+**Delegate to `/professional` for verification.**
+
+- Code demonstrates professional responsibility
+- Quick, sure, repeatable proof that code works (tests)
+- Code represents your best work — you'd be comfortable showing it to a colleague
+- Knowledge is shared — others can understand and maintain the code
 
 ---
 
-## Summary Template
+## Severity Classification
 
-After reviewing, provide:
+When reporting issues, classify by impact:
 
-```
-## Code Review Summary
+**CRITICAL** — Significantly impacts maintainability or correctness. Must fix before the code can be considered done. Examples: untested business logic, function doing 5 things, misleading names, null returns in public APIs.
 
-**Overall Assessment:** [Brief 1-2 sentence summary]
+**WARNING** — Should be addressed but won't cause immediate problems. Examples: slightly long functions, imperfect names, missing edge-case tests.
 
-**Strengths:**
-- [What the code does well]
-
-**Critical Issues:** [count]
-**Warnings:** [count]
-**Suggestions:** [count]
-
-**Priority Fixes:**
-1. [Most important fix]
-2. [Second priority]
-3. [Third priority]
-
-**Recommendations:**
-[Overall guidance for improvement]
-```
+**SUGGESTION** — Nice-to-have improvements. Examples: minor formatting inconsistencies, comments that could be clearer, slightly better name choices.
 
 ---
 
-## Key Quotes to Remember
+## The Review Mindset
 
-- "Clean code reads like well-written prose." - Grady Booch
-- "You know you are working on clean code when each routine you read turns out to be pretty much what you expected." - Ward Cunningham
-- "Leave the campground cleaner than you found it." - Boy Scout Rule
-- "The proper use of comments is to compensate for our failure to express ourselves in code."
-- "Functions should do one thing. They should do it well. They should do it only."
+### Start with Structure
+Before diving into details, step back. Does the architecture scream its intent? Can you tell what the system does from the file and module structure? If you have to read code to understand what the system is for, the architecture has failed.
+
+### Follow the Dependency Arrows
+Trace dependencies. Do they point inward toward business rules, or outward toward infrastructure? Every outward-pointing dependency is a potential problem — it means business logic depends on a detail that could change.
+
+### Read Functions as Prose
+Read each function top to bottom. Does it tell a clear story? Can you understand what it does without scrolling? If you have to hold more than one concept in your head to understand a function, it's doing too much.
+
+### Check the Tests Last
+Tests are the specification. Read them after the production code. Do the tests tell you what the system does? Are there gaps — scenarios with no test coverage? Do the tests give you confidence to refactor?
 
 ---
 
-## Target Code
+## Common Review Mistakes
 
-$ARGUMENTS
+**Nitpicking formatting while ignoring design.** Catching a misaligned bracket while missing that a function has 8 parameters is prioritizing the wrong thing. Design issues first, formatting last.
+
+**Reviewing too much at once.** Large reviews lead to rubber-stamping. If the changeset is too large, ask the author to break it into smaller pieces. A 500-line review catches 10x more issues than a 5000-line review.
+
+**Accepting "it works" as sufficient.** Working code is the minimum bar, not the goal. The question is whether the code is maintainable, testable, and clear — whether it will still be easy to work with six months from now.
+
+**Skipping tests.** If a review doesn't examine tests, it's not a review. Tests are half the codebase and the primary documentation of behavior.
+
+**Being too gentle.** A review that finds zero issues is suspicious. Every piece of code can be improved. If you can't find anything, look harder — or question whether you're being thorough enough.
 
 ---
 
 ## Related Skills
 
-This comprehensive code review workflow integrates with all Clean Code skills:
-
-- **/naming** - Naming analysis for intent-revealing names, pronounceability, and proper parts of speech
-- **/functions** - Function analysis for size, arguments, side effects, and command-query separation
-- **/solid** - SOLID principles analysis for class design, cohesion, and coupling
-- **/architecture** - Clean Architecture patterns, boundaries, and dependency management
-- **/tdd** - Test quality, coverage, and TDD compliance
-- **/acceptance-testing** - Acceptance test quality, testing pyramid compliance, fixture design
-- **/agile** - Definition of Done rigor, velocity honesty, technical practice compliance
-- **/functional-programming** - Purity, immutability, side effect isolation, functional SOLID
-- **/legacy-code** - Boy Scout Rule compliance, characterization tests, strangulation opportunities
-- **/professional** - Professional standards, responsibility, and ethics
+- **/naming** — Naming analysis
+- **/functions** — Function analysis
+- **/solid** — SOLID principles and class design
+- **/architecture** — Clean Architecture and boundaries
+- **/tdd** — Test quality and TDD compliance
+- **/patterns** — Design patterns
+- **/acceptance-testing** — Acceptance test quality and testing pyramid
+- **/components** — Component cohesion and coupling principles
+- **/functional-programming** — Purity, immutability, side effect isolation
+- **/legacy-code** — Boy Scout Rule, characterization tests
+- **/professional** — Professional standards and responsibility

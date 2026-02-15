@@ -9,119 +9,72 @@ allowed-tools: Read, Write, Edit, Bash, Grep, Glob
 argument-hint: [file or directory to analyze]
 ---
 
-# Legacy Code Workflow
+# Legacy Code
 
-This workflow guides AI agents through working with legacy code using Uncle Bob's teachings from the Clean Code series (Episode 68) and Michael Feathers' techniques from "Working Effectively with Legacy Code." Follow these steps when dealing with old, untested, or poorly structured code.
+Guide for working with legacy code using Uncle Bob's teachings and Michael Feathers' techniques from "Working Effectively with Legacy Code."
+
+For extended examples (characterization test walkthroughs, strangulation case studies, real-world acts of kindness), read `references/extended-examples.md`.
 
 ## Workflow Steps
 
-### Step 1: Assess the Legacy Code Situation
-- Identify the scope of the legacy code being touched
-- Determine if the code has any existing tests
-- Identify inputs and outputs for potential characterization tests
-- Understand what change is actually needed (bug fix, new feature, refactor)
-
-### Step 2: Apply the Boy Scout Principle
-- Plan one small act of kindness alongside any required change
-- Do NOT start a cleanup project or hunt for refactoring opportunities
-- Focus only on the code you are actively touching
-
-### Step 3: Write Characterization Tests Where Possible
-- Find modules with defined inputs and outputs
-- Capture current behavior as the "golden standard"
-- Use these tests as safety nets for refactoring
-
-### Step 4: Add New Features in Clean Modules
-- Write new functionality in isolated, clean modules using TDD
-- Integrate the clean module into the legacy system at boundaries
-- Do NOT smear new code throughout the existing system
-
-### Step 5: Perform Incremental Cleanup
-- Fix one bad coupling, rename one function, split one function
-- Run existing tests to verify nothing broke
-- Check in the code cleaner than you found it
-
-### Step 6: Watch for Strangulation Opportunities
-- As clean code accumulates around legacy code, look for safe rewrite opportunities
-- Only rewrite code that is completely surrounded by tested modules
-
-### Step 7: Apply /professional Standards
-- Ensure all changes meet professional quality standards
-- Never check code in worse than you found it
+1. **Assess the situation** — what legacy code are you touching and why? Any existing tests?
+2. **Apply the Boy Scout Principle** — plan one small act of kindness alongside the required change
+3. **Write characterization tests** where possible — capture current behavior as a safety net
+4. **Add new features in clean modules** — write new code with TDD, integrate at boundaries
+5. **Perform incremental cleanup** — one rename, one split, one decouple — then check in
+6. **Watch for strangulation opportunities** — when clean code surrounds legacy code, it's safe to rewrite
+7. **Apply /professional standards** — never check code in worse than you found it
 
 ---
 
-## Core Philosophy
+## What Is Legacy Code?
 
-### What Is Legacy Code?
+Legacy code is not defined by age — it is defined by how it was written. It is code created without proper discipline, tests, or clean design. Critically, legacy code is being actively created TODAY by teams that don't follow clean code practices.
 
-Legacy code is not defined by age alone -- it is defined by how it was written. It is code created without proper discipline, tests, or clean design. Critically, legacy code is being actively created today by teams that don't follow clean code practices.
+Michael Feathers' key insight: an associate joined a new team that was "busy writing legacy code" — on a brand new project. Legacy code is a discipline problem, not an age problem.
 
-> "Just about every programmer in the world is embroiled in the midst of some old crufty poorly designed, badly maintained, tangled, and tortured mass of ugly legacy code."
-
-Michael Feathers' key insight came from an associate who joined a new team that was "busy writing legacy code" -- on a brand new project. This reframes legacy code as a discipline problem, not an age problem.
-
-### The Legacy Code Dilemma
-
-There is no magic solution:
-
-> "There is no simple solution to solve this problem. There's no magic wand. There's no special beans. There's no miracles you can perform. It's just going to require a lot of long hard work."
-
-But there is hope. The techniques below provide a disciplined, incremental path forward.
+There is no magic solution. No special project, no magic wand. It's going to require long, patient, disciplined work. But there IS a path forward.
 
 ---
 
-## The Four Anti-Patterns: What NOT To Do
+## The Four Anti-Patterns
 
-### Anti-Pattern 1: Do Not Start a Cleanup Project
+### 1. Do Not Start a Cleanup Project
 
-> "Do not start a project to clean up the legacy code."
+Do not go to your boss and beg for time to clean things up. Do not make promises about timelines or improvements. Cleanup projects almost always fail badly, leaving teams discouraged and discredited, and the code badly mangled. The reason: cleanup projects try to fix everything at once with artificial deadlines, which leads to rushed, incomplete work.
 
-Do not go to your boss and beg for time to clean things up. Do not make promises about timelines or improvements. Cleanup projects almost always fail badly, leaving teams discouraged and discredited, and the code badly mangled.
+### 2. Do Not Go on a Refactoring Hunt
 
-> "Clean up projects never work, and when they're tried, they usually do more damage than good."
+Don't scan through the code looking for opportunities to refactor. The vast majority of code in a system has not been touched for years and is not likely to be touched anytime soon. Refactoring untouched code does nobody any good. You only improve what you're actively working on.
 
-### Anti-Pattern 2: Do Not Go on a Refactoring Hunt
+### 3. Do Not Attempt a Massive Rewrite
 
-> "Don't go scanning through the code, looking for opportunities to refactor things."
+The "big redesign in the sky" almost never improves anything. Big rewrites fail because they attempt to replace a working (if ugly) system with an unproven one. The new system inevitably accumulates its own problems, and the old system keeps evolving while the rewrite is underway.
 
-Any effort put into random refactoring will be entirely wasted because the vast majority of code in a system has not been touched for years and is not likely to be touched anytime soon. Refactoring untouched code does nobody any good.
+### 4. Do Not Smear New Features Throughout the System
 
-### Anti-Pattern 3: Do Not Attempt a Massive Rewrite
-
-> "Don't convince yourself that the only solution is a massive rewrite."
-
-The "big redesign in the sky" almost never improves anything. Big rewrites fail because they attempt to replace a working (if ugly) system with an unproven one, and the new system inevitably accumulates its own problems.
-
-### Anti-Pattern 4: Do Not Smear New Features Throughout the System
-
-When adding a new feature, the temptation is to write the code in a way consistent with how the legacy system is written -- spreading it throughout the codebase. This makes the legacy problem worse, not better.
+When adding a new feature, the temptation is to write the code in a way consistent with how the legacy system is written — spreading it throughout the codebase. This makes the legacy problem worse, not better. Write new features in clean isolated modules instead.
 
 ---
 
-## The Boy Scout Principle: The Correct Approach
+## The Boy Scout Principle
 
-The core strategy for dealing with legacy code is an attitude change:
+The core strategy for dealing with legacy code is an attitude change: always check the code in cleaner than you checked it out. Every single time. Never check it in worse.
 
-> "Always check the code in cleaner than you checked it out every single time."
-
-> "Never ever check it in worse than it was. Always make it better."
-
-### What One Random Act of Kindness Looks Like
+### What One Act of Kindness Looks Like
 
 - Fix one bad coupling
 - Change one function name to reveal intent
 - Split one large function in two
 - Extract one duplicated block
 - Add one clarifying comment (only if code can't be made self-documenting)
+- Remove one dead code block
 
-Then check it in.
-
-> "Do some random act of kindness to the code... Gently, gently don't do too much. Don't try to fix a whole bunch of things. Don't dig in and tear it to shreds. Do it gently. Do it evenly."
+Then check it in. Gently — don't try to fix a whole bunch of things at once. Don't dig in and tear it to shreds.
 
 ### The Team Effect
 
-If everyone on the team follows this practice, the codebase will gradually improve over time. But not ALL of it will improve -- only the volatile parts that are actively maintained. This is a feature, not a bug: you only improve what matters.
+If everyone on the team follows this practice, the codebase gradually improves over time. But not ALL of it — only the volatile parts that are actively maintained. This is a feature, not a bug: you only improve what matters.
 
 ---
 
@@ -129,250 +82,173 @@ If everyone on the team follows this practice, the codebase will gradually impro
 
 A virtuous cycle emerges from consistent application of the Boy Scout Principle:
 
-1. Legacy code generally was not designed to be testable
+1. Legacy code was not designed to be testable
 2. At first, adding tests is impractical
 3. After a few acts of kindness, it suddenly becomes easier to add a unit test
 4. More tests make the system easier to clean
 5. Easier cleaning leads to more tests
 6. The pace of improvement accelerates
 
-> "And now you've got a rolling snowball."
-
-The volatile parts of the system get cleaner and cleaner, and easier and easier to work in.
+This is the snowball effect. The volatile parts of the system get cleaner and cleaner, and easier and easier to work in. The key is patience — improvements are small at first, but they accumulate month after month.
 
 ---
 
 ## The Strangulation Technique
 
-Over months or even years, the cleaned volatile parts will completely surround some ugly, untested legacy code that hasn't been modified. Once that legacy code is completely surrounded by tested modules, you have an opportunity to safely rewrite or refactor it.
+Over months or years, the cleaned volatile parts will completely surround some ugly, untested legacy code that hasn't been modified. Once that legacy code is completely surrounded by tested modules, you have an opportunity to safely rewrite or refactor it.
 
-> "Rewriting code that's surrounded by tested modules is a safe operation, and it's safe because of all those modules that are tested. We call this technique strangulation."
+The cleaner, tested code strangles the legacy code in the middle, allowing it to be rewritten and tested safely. This is the ONLY safe context for a rewrite: small scope, surrounded by tests, protected on all sides.
 
-> "The cleaner tested code strangles that bad yuck in the middle there, and allows it to be rewritten, and refactored, and tested."
+**The progression:**
+```
+Phase 1: Legacy everywhere, no tests
+┌──────────────────────────┐
+│  Legacy  Legacy  Legacy  │
+│  Legacy  Legacy  Legacy  │
+│  Legacy  Legacy  Legacy  │
+└──────────────────────────┘
 
-This is the ONLY safe context for a rewrite: small, surrounded, and protected by tests.
+Phase 2: Clean modules growing around the edges
+┌──────────────────────────┐
+│ [Clean] Legacy  [Clean]  │
+│  Legacy  Legacy  Legacy  │
+│ [Clean]  Legacy [Clean]  │
+└──────────────────────────┘
+
+Phase 3: Legacy code surrounded — safe to strangle
+┌──────────────────────────┐
+│ [Clean] [Clean] [Clean]  │
+│ [Clean] Legacy  [Clean]  │
+│ [Clean] [Clean] [Clean]  │
+└──────────────────────────┘
+```
 
 ---
 
 ## Adding New Features to Legacy Systems
 
-When asked to add a new feature to a legacy system:
-
 ### Wrong Way
-Smear the code for the new feature throughout the whole system in a way consistent with how the system is written. This perpetuates the legacy problem.
+
+Smear the code for the new feature throughout the whole system in a way consistent with how the system is written. This perpetuates the legacy problem and makes the code worse.
 
 ### Right Way
-Write the new feature in its own module independently, using test-driven development and clean code principles. Make it a nice clean module, then tie it into the rest of the system at integration points.
+
+Write the new feature in its own module independently, using TDD and clean code principles. Make it a nice clean module, then tie it into the rest of the system at integration points.
 
 This takes slightly longer but prevents the legacy problem from growing. Every new clean module is another piece of the strangulation strategy.
 
+```
+// Wrong: new code smeared into legacy
+LegacyOrderProcessor:
+    processOrder(order):
+        ... 200 lines of legacy code ...
+        // NEW: loyalty points added inline
+        if order.customer.loyaltyTier == "gold":
+            points = order.total * 2
+        else:
+            points = order.total
+        loyaltyDb.addPoints(order.customer.id, points)
+        ... 100 more lines of legacy code ...
+
+// Right: new feature in clean module, integrated at boundary
+LoyaltyCalculator:  // new, clean, tested
+    calculatePoints(customer, orderTotal):
+        multiplier = loyaltyMultiplier(customer.tier)
+        return orderTotal * multiplier
+
+    loyaltyMultiplier(tier):
+        switch tier:
+            GOLD: return 2
+            SILVER: return 1.5
+            default: return 1
+
+// Integration — minimal touch to legacy code
+LegacyOrderProcessor:
+    processOrder(order):
+        ... legacy code unchanged ...
+        loyaltyCalculator.awardPoints(order.customer, order.total)
+        ... legacy code unchanged ...
+```
+
 ---
 
-## Characterization Tests (Golden Standard)
+## Characterization Tests
 
-Michael Feathers' technique for creating safety nets around legacy code:
+Michael Feathers' technique for creating safety nets around legacy code.
 
 ### When to Use
-- Find a module with precisely defined outputs based on precisely defined inputs
-- Examples: a module that prints a report from a database, a transaction processor with log output
+
+When you find a module with precisely defined outputs based on precisely defined inputs. Examples: a module that generates a report from data, a transaction processor with log output, an API endpoint with known request/response pairs.
 
 ### The Technique
 
 1. **Identify** a module with defined I/O boundaries
-2. **Capture** the current output given a known input -- this is the "golden standard"
+2. **Capture** the current output given a known input — this is the "golden standard"
 3. **Save** this output as your characterization test
 4. **Refactor** the internals of the module
 5. **Regenerate** the output after each refactoring step
-6. **Compare** to the golden standard -- if they match, nothing is broken
+6. **Compare** to the golden standard — if they match, nothing is broken
 7. **Continue** refactoring as long as the golden standard holds
 
-### Properties of Characterization Tests
+### Properties
 
-- **Fragile by nature**: Any new feature or behavior change can invalidate the golden standard
+- **Fragile by nature**: Any new feature or intentional behavior change invalidates the golden standard
 - **Regeneration required**: When behavior intentionally changes, regenerate the golden standard
 - **Transitional**: As the system becomes more testable, replace characterization tests with proper unit tests
 - **Enables the snowball**: More testability leads to more unit tests, which enables more aggressive refactoring
 
-### Beyond Reports: Log Files as Golden Standards
+### Challenges with Non-Deterministic Systems
 
-For transaction-based systems, log files can potentially serve as golden standards. However, challenges include:
-- Different thread ordering between runs
-- Timestamp variations from system clocks
-- Non-deterministic process scheduling
-
-A comparison utility that eliminates irrelevant differences and focuses on relevant substance can make this approach viable.
+For transaction-based systems, log files can serve as golden standards. But challenges include different thread ordering between runs, timestamp variations, and non-deterministic process scheduling. A comparison utility that eliminates irrelevant differences (timestamps, thread IDs) and focuses on relevant substance can make this approach viable.
 
 ---
 
-## Prevention: How to Avoid Creating Legacy Code
+## Review Checklist
 
-The entire 67-episode Clean Code series teaches how to avoid creating legacy code in the first place. The key practices:
+When reviewing legacy code changes:
 
-1. **Test-Driven Development** (`/tdd`): Write tests first, always
-2. **SOLID Principles** (`/solid`): Design classes with proper responsibilities and dependencies
-3. **Clean Functions** (`/functions`): Keep functions small and focused
-4. **Clean Names** (`/naming`): Use intention-revealing names
-5. **Clean Architecture** (`/architecture`): Separate concerns, invert dependencies
-6. **Boy Scout Rule**: Always leave code cleaner than you found it
-7. **Professional Discipline** (`/professional`): Take responsibility for code quality
+**Boy Scout Rule:**
+- [ ] Code is cleaner than when you found it
+- [ ] At least one act of kindness performed
+- [ ] No code checked in worse than it was found
 
-> "We programmers built an awful lot of systems in the past before we knew how systems ought to be built."
+**New Features:**
+- [ ] New features in clean isolated modules, not smeared throughout
+- [ ] New modules written with TDD
+- [ ] Integration at defined boundaries (minimal touch to legacy code)
 
-The problem is not just historical -- many programmers today still create legacy code due to the same misconceptions and lack of discipline.
+**Testing:**
+- [ ] Characterization tests exist where possible
+- [ ] Unit tests added wherever cleaning made it possible
+- [ ] Golden standards captured for modules with defined I/O
 
----
-
-## Step-by-Step Workflow for Legacy Code
-
-### Assessment Phase
-1. **Identify the scope** -- What legacy code are you touching and why?
-2. **Check for existing tests** -- Any tests at all? Integration tests? Manual test scripts?
-3. **Map the I/O boundaries** -- Can you identify inputs and outputs for characterization tests?
-4. **Understand the change** -- Is this a bug fix, new feature, or required refactoring?
-
-### Preparation Phase
-5. **Create characterization tests** where possible for modules you'll be modifying
-6. **Establish golden standards** for output comparison
-7. **Identify integration points** where new clean code will connect to legacy code
-
-### Implementation Phase
-8. **Write new features in clean isolated modules** using TDD
-9. **Perform one small act of kindness** for each check-in (rename, split, decouple)
-10. **Add unit tests** wherever the cleaning makes it possible
-11. **Integrate clean modules** at defined boundaries
-
-### Ongoing Phase
-12. **Watch for strangulation opportunities** as clean code surrounds legacy code
-13. **Never revert** to old habits or check code in worse than you found it
-14. **Be patient** -- improvements accumulate over months and years
-
----
-
-## Patience and Determination
-
-> "Whatever happens, nothing is going to happen quickly."
-
-> "It took a long time to make the mess. It's gonna take a long time to clean it up, but it can be cleaned up. It just takes determination and patience."
-
-The trajectory:
-- Improvements will be small at first
-- Month after month, they accumulate
-- The pace of cleaning accelerates as testability improves
-- Don't give up and don't revert to old habits
-
----
-
-## Output Format
-
-When analyzing legacy code, present findings as:
-
-```
-## Legacy Code Assessment
-
-**Scope:** [What legacy code is being touched]
-**Existing Tests:** [Any existing test coverage]
-**Characterization Test Opportunities:** [Modules with defined I/O]
-**Recommended Acts of Kindness:** [Specific small improvements]
-**New Feature Strategy:** [How to add features cleanly]
-**Strangulation Status:** [Progress toward surrounding legacy code with tested modules]
-```
-
-For each recommended change:
-```
-### Act of Kindness: [Description]
-**Location:** file:line
-**Type:** [rename/split/decouple/extract/test]
-**Current State:** [What the code looks like now]
-**Proposed Change:** [What it should look like]
-**Risk Level:** [low/medium - legacy changes should always be low risk]
-**Test Coverage:** [How this change is protected]
-```
-
----
-
-## Memorable Quotes
-
-> "Just about every programmer in the world is embroiled in the midst of some old crufty poorly designed, badly maintained, tangled, and tortured mass of ugly legacy code."
-
-> "There is no simple solution to solve this problem. There's no magic wand. There's no special beans."
-
-> "Do not start a project to clean up the legacy code."
-
-> "Clean up projects never work, and when they're tried, they usually do more damage than good."
-
-> "Big rewrites almost never improve anything."
-
-> "Always check the code in cleaner than you checked it out every single time."
-
-> "Never ever check it in worse than it was. Always make it better."
-
-> "Do some random act of kindness to the code."
-
-> "Gently, gently don't do too much."
-
-> "And now you've got a rolling snowball."
-
-> "We call this technique strangulation."
-
-> "The cleaner tested code strangles that bad yuck in the middle there, and allows it to be rewritten, and refactored, and tested."
-
-> "It took a long time to make the mess. It's gonna take a long time to clean it up, but it can be cleaned up. It just takes determination and patience."
+**Strategy:**
+- [ ] No cleanup project initiated (incremental only)
+- [ ] No random refactoring hunt (only improving code being touched)
+- [ ] Strangulation opportunities identified if clean code now surrounds legacy
 
 ---
 
 ## Common Pitfalls
 
-- **Starting a cleanup project** - Projects fail; incremental improvement succeeds
-- **Random refactoring hunts** - Only improve code you're actively touching
-- **Big rewrites** - Almost never improve anything
-- **Smearing new features** - Write clean modules, integrate at boundaries
-- **Impatience** - Legacy code took years to create; cleaning takes time too
-- **Giving up** - The snowball effect means progress accelerates over time
-- **Checking in worse code** - Never, under any circumstances
+**Starting a cleanup project.** Projects fail; incremental improvement succeeds. Don't ask your boss for "cleanup time." Just make the code a little better every time you touch it.
 
----
+**Hunting for refactoring opportunities.** Only improve code you're actively touching. Refactoring untouched code helps nobody.
 
-## Self-Review (Back Pressure)
+**Attempting a massive rewrite.** The "big redesign in the sky" almost never works. Use the Strangulation technique instead.
 
-After working with legacy code, ALWAYS perform this self-review:
+**Smearing new features.** Write clean modules, integrate at boundaries. Don't write new code in the style of the legacy code.
 
-### Self-Review Steps
-1. **Boy Scout Check**: Is this code cleaner than when I found it?
-2. **Smearing Check**: Did I add new features in clean isolated modules, or smear them throughout the system?
-3. **Test Check**: Did I add characterization tests or unit tests where possible?
-4. **Kindness Check**: Did I perform at least one small act of kindness?
-5. **Integration Check**: Are new modules integrated at clean boundaries?
+**Impatience.** It took years to create the mess. Cleaning takes time too. But the snowball effect means progress accelerates.
 
-### If Violations Found
-- Fix the violations immediately
-- Ensure no code is checked in worse than it was found
-- Re-run self-review
-
-### Mandatory Quality Gate
-Legacy code changes are NOT complete until:
-- [ ] Code is cleaner than when you found it (Boy Scout Rule)
-- [ ] New features are in clean isolated modules
-- [ ] Characterization tests exist where possible
-- [ ] At least one act of kindness performed per change
-- [ ] No code smeared throughout the legacy system
-
----
-
-## Code to Analyze
-
-$ARGUMENTS
+**Giving up.** The early improvements feel small. Keep going. Month after month, they compound.
 
 ---
 
 ## Related Skills
 
-Working with legacy code integrates with all Clean Code practices:
-
-- **/tdd** - Write new features test-first in clean modules
-- **/solid** - Apply SOLID principles to new code and incremental improvements
-- **/naming** - Rename unclear functions and variables as acts of kindness
-- **/functions** - Split large functions as acts of kindness
-- **/architecture** - Design clean module boundaries for new features
-- **/patterns** - Apply appropriate patterns when refactoring legacy code
-- **/professional** - Take professional responsibility for code quality
-- **/clean-code-review** - Review changes before checking in
+- **/tdd** — Write new features test-first in clean modules
+- **/refactor-suggestion** — Identify specific code smells and refactoring techniques
+- **/solid** — Apply SOLID principles to new code and incremental improvements
+- **/architecture** — Design clean module boundaries for new features
+- **/professional** — Professional responsibility to never check code in worse

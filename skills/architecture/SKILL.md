@@ -1,52 +1,37 @@
 ---
 name: architecture
 description: >-
-  Guide implementing features using Clean Architecture patterns (use cases, boundaries,
-  dependency rule). Activates when designing new features, creating modules, planning
-  system structure, working with use cases, handlers, or boundaries, or when the user
-  mentions architecture, layers, dependencies, clean architecture, or module design.
+  Design and review software architecture using Clean Architecture principles.
+  Activate whenever designing system structure, defining boundaries, creating
+  use cases, planning modules, reviewing dependency direction, or discussing
+  layers, deployment, or framework/database independence. Architecture touches
+  everything — if dependencies point the wrong way, no amount of clean code at
+  the function level will save the system.
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob
-argument-hint: [feature description]
+argument-hint: [feature description or code to analyze]
 ---
 
-# Architecture Workflow
+# Architecture Skill
 
-Follow this workflow when designing system structure, reviewing architecture decisions, or implementing features using Clean Architecture principles.
+Architecture is the art of drawing lines — boundaries that separate software elements and restrict dependencies. The goal is to minimize the human resources required to build and maintain the system. A good architecture keeps options open, defers decisions, and makes the system easy to change.
 
-## Workflow Steps
+For SOLID principles at the class level, see `/solid`. For component cohesion and coupling metrics, see `/components`. For design patterns, see `/patterns`.
 
-1. **Identify layers and boundaries** - Determine which architectural layers are involved and where boundaries exist
-2. **Apply the Dependency Rule** - Ensure all dependencies point inward toward higher-level policies
-3. **Define use cases and interactors** - Capture application-specific business rules
-4. **Create proper boundary data structures** - Use simple DTOs to cross boundaries, never entities
-5. **Apply component principles** - Follow REP, CCP, CRP, ADP, SDP, SAP for component design
-6. **Apply /professional workflow** - Ensure quality standards are met
+For detailed architecture walkthroughs with full system examples, read `references/extended-examples.md`.
 
 ---
 
-## Core Philosophy
+## The Two Values of Software
 
-### What is Architecture?
+Software has exactly two values: **behavior** (what it does now) and **structure** (the ability to change it). Structure is more important — a system that works but can't change is worthless, because requirements will change. A system that doesn't work but can change is valuable, because you can make it work.
 
-Architecture is the art of drawing lines - boundaries that separate software elements and restrict dependencies. The goal is to minimize human resources required to build and maintain systems. A good architecture allows decisions to be deferred, keeping options open as long as possible.
-
-**The Prime Directive:** The architecture must serve the business, not the other way around. Technical decisions should be deferred, and business rules should be the center of the system.
-
-### The Purpose of Good Architecture
-
-1. **Minimize cost of change** - Systems should be easy to modify throughout their lifetime
-2. **Keep options open** - Defer decisions about frameworks, databases, and UI until the last responsible moment
-3. **Enable independent deployability** - Components should be deployable independently
-4. **Support team independence** - Teams should be able to work on different components without stepping on each other
-5. **Make the system testable** - Business rules should be testable without UI, database, or external systems
+Most managers prioritize behavior (urgent) over structure (important). Architects must fight for structure, or the system drowns in its own mess.
 
 ---
 
 ## The Dependency Rule
 
-**The most important rule in Clean Architecture: Source code dependencies must point inward, toward higher-level policies.**
-
-### The Concentric Circles
+**The most important rule in Clean Architecture: source code dependencies must point inward, toward higher-level policies.**
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -67,1508 +52,262 @@ Architecture is the art of drawing lines - boundaries that separate software ele
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Layer Definitions
+### The Four Layers
 
-#### 1. Entities (Enterprise Business Rules)
-- The innermost circle containing enterprise-wide business rules
-- Pure business objects with no knowledge of application or delivery mechanism
-- Would exist even if no software system existed
-- Examples: Customer, Order, Invoice with their critical business rules
-- **Never change due to external concerns** - only change when business rules change
+**1. Entities (Enterprise Business Rules)** — Pure business objects with no knowledge of application or delivery mechanism. Would exist even if no software existed. Only change when business rules change.
 
-#### 2. Use Cases (Application Business Rules)
-- Application-specific business rules
-- Orchestrate the flow of data to and from entities
-- Direct entities to use their enterprise-wide business rules
-- Changes here should not affect entities
-- Changes to external layers should not affect use cases
+**2. Use Cases (Application Business Rules)** — Application-specific rules. Orchestrate data flow to/from entities. Don't know about controllers, presenters, or views.
 
-#### 3. Interface Adapters
-- Convert data from the format most convenient for use cases and entities
-- Contains Controllers, Presenters, and Gateways
-- No business rules - only data conversion
-- This is where MVC architecture lives
+**3. Interface Adapters** — Convert data between formats convenient for use cases and formats convenient for external tools. Controllers, Presenters, Gateways. No business rules — only data conversion. MVC lives here.
 
-#### 4. Frameworks & Drivers
-- The outermost layer containing frameworks and tools
-- Web frameworks, databases, UI frameworks
-- Generally, you don't write much code here - it's "glue code"
-- This layer is where all the details go
+**4. Frameworks & Drivers** — The outermost layer. Web frameworks, databases, UI frameworks. Mostly glue code. All the details go here.
 
-### Crossing Boundaries
+---
 
-**Critical Rule:** Data that crosses boundaries should be simple data structures. Never pass Entity objects or database rows across boundaries.
+## Crossing Boundaries
+
+**Data that crosses boundaries must be simple data structures. Never pass Entity objects or database rows across boundaries.**
 
 ```
-Controller --> Use Case Input Port --> Interactor --> Use Case Output Port --> Presenter
-                    (interface)                           (interface)
+Controller --> InputBoundary(interface) --> Interactor --> OutputBoundary(interface) --> Presenter
 ```
 
-- **Input Boundary (Port):** Interface that the controller calls
-- **Output Boundary (Port):** Interface that the use case calls to send results
-- **Interactor:** The implementation of the use case
-- **Request Model:** Data structure going into the use case
-- **Response Model:** Data structure coming out of the use case
+- **Input Boundary (Port):** Interface the controller calls
+- **Output Boundary (Port):** Interface the use case calls to send results
+- **Interactor:** The use case implementation
+- **Request/Response Models:** Plain DTOs with primitive types only — no entities, no framework objects
+
+```
+// Bad — passing Entity through boundary
+OrderResponse { order: Order }  // Entity leaking out!
+
+// Good — only the data needed
+OrderResponse {
+    orderId
+    customerName
+    total
+}
+```
+
+The Interactor sits at the center. Control flows through it, but dependencies point toward it — this is Dependency Inversion at the architectural level.
 
 ---
 
 ## Use Cases and Interactors
 
-### What is a Use Case?
-
-A use case is a description of how a system is used - it captures application-specific business rules. Use cases tell the story of how automated systems are used by describing the input to be provided, the output to be generated, and the processing steps involved.
-
-### Interactor Structure
+A use case captures application-specific business rules — input, output, and processing steps.
 
 ```
-class CreateOrderInteractor implements CreateOrderInputPort {
-    private OrderGateway orderGateway;
-    private CreateOrderOutputPort presenter;
+CreateOrderInteractor implements CreateOrderInputPort:
+    orderGateway: OrderGateway
+    presenter: CreateOrderOutputPort
 
-    void execute(CreateOrderRequest request) {
+    execute(request: CreateOrderRequest):
         // 1. Validate request
         // 2. Create/manipulate entities
         // 3. Persist through gateway
         // 4. Build response
         // 5. Pass to presenter
-    }
-}
 ```
 
-### Use Case Principles
-
-1. **Use cases know about entities, not the reverse**
-2. **Use cases don't know about controllers, presenters, or views**
-3. **Use cases define input/output boundaries (interfaces)**
-4. **Request/Response models are plain data structures** - no behavior, no dependencies
-5. **Each use case should have a single responsibility**
-
-### Request and Response Models
-
-**Request Models:**
-- Simple data structures (DTOs)
-- Contain only primitive types or other simple data structures
-- No references to Entity objects
-- Validated before reaching the interactor
-
-**Response Models:**
-- Simple data structures
-- Formatted for the output port, not for any specific view
-- No Entity objects - only the data needed
-- May contain error information
-
-```
-// Bad - passing Entity through boundary
-class OrderResponse {
-    Order order;  // Entity - WRONG!
-}
-
-// Good - passing only needed data
-class OrderResponse {
-    String orderId;
-    String customerName;
-    BigDecimal total;
-    String status;
-}
-```
+**Principles:** Use cases know about entities, not the reverse. Each use case has a single responsibility. Request/Response models are plain data structures with no behavior.
 
 ---
 
-## The SOLID Principles
+## The Humble Object Pattern
 
-### Single Responsibility Principle (SRP)
+Separate hard-to-test code from easy-to-test code:
 
-**"A module should have one, and only one, reason to change."**
+- **Humble Object:** Hard-to-test code (UI, database), minimal logic
+- **Testable Object:** All business logic, receives/returns simple data
 
-More precisely: **"A module should be responsible to one, and only one, actor."**
-
-An "actor" is a group of people who want the system to change in the same way. The SRP is about people, not about functions.
-
-**Symptoms of SRP Violation:**
-- Accidental Duplication: Different actors share code that looks the same but changes for different reasons
-- Merge Conflicts: Changes for one actor collide with changes for another
-- Feature Envy: A class is more interested in another class's data than its own
-
-**Solutions:**
-- Separate data from functions (Facade pattern)
-- Extract classes by actor
-- Create separate interfaces for different actors
-
-**Example of Violation:**
-```
-class Employee {
-    calculatePay()      // CFO's concern (accounting)
-    reportHours()       // COO's concern (operations)
-    save()              // CTO's concern (technical)
-}
-```
-
-Three actors, three reasons to change - this violates SRP.
-
-### Open-Closed Principle (OCP)
-
-**"Software entities should be open for extension but closed for modification."**
-
-You should be able to add new functionality without modifying existing code. This is achieved through abstraction and polymorphism.
-
-**The Goal:** If component A should be protected from changes in component B, then B should depend on A, not vice versa.
-
-**Implementation Strategies:**
-1. Use interfaces/abstract classes at architectural boundaries
-2. Apply Dependency Inversion - make volatile components depend on stable abstractions
-3. Organize components into a hierarchy of protection levels
-
-**Protected Variation:** Identify points of predicted variation and create stable interfaces around them.
-
-```
-// Closed for modification, open for extension
-interface Shape {
-    double area();
-}
-
-class Circle implements Shape { /* ... */ }
-class Rectangle implements Shape { /* ... */ }
-// Add new shapes without modifying existing code
-```
-
-### Liskov Substitution Principle (LSP)
-
-**"Subtypes must be substitutable for their base types."**
-
-If S is a subtype of T, then objects of type T may be replaced with objects of type S without altering any of the desirable properties of the program.
-
-**The Rectangle/Square Problem:**
-```
-class Rectangle {
-    void setWidth(int w) { width = w; }
-    void setHeight(int h) { height = h; }
-}
-
-class Square extends Rectangle {
-    void setWidth(int w) { width = w; height = w; }  // Violates LSP!
-    void setHeight(int h) { width = h; height = h; }
-}
-```
-
-A square IS-A rectangle mathematically, but NOT behaviorally in software. Setting width and height independently is a property users expect of Rectangle.
-
-**Design by Contract:**
-- Preconditions cannot be strengthened in a subtype
-- Postconditions cannot be weakened in a subtype
-- Invariants of the supertype must be preserved
-
-**LSP in Architecture:**
-- Applies to interfaces, not just inheritance
-- REST APIs, microservices, plugins must follow substitutability
-- Architectural violations lead to if-else chains checking types
-
-### Interface Segregation Principle (ISP)
-
-**"Clients should not be forced to depend on interfaces they do not use."**
-
-Don't force a class to implement methods it doesn't need. Split large interfaces into smaller, more specific ones.
-
-**Fat Interface Problem:**
-```
-interface Worker {
-    void work();
-    void eat();
-    void sleep();
-}
-
-// Robot can work but doesn't eat or sleep!
-class Robot implements Worker {
-    void eat() { throw new UnsupportedOperationException(); }  // ISP violation
-}
-```
-
-**Solution:**
-```
-interface Workable { void work(); }
-interface Eatable { void eat(); }
-interface Sleepable { void sleep(); }
-
-class Human implements Workable, Eatable, Sleepable { /* ... */ }
-class Robot implements Workable { /* ... */ }
-```
-
-**ISP in Architecture:**
-- Statically typed languages suffer from unnecessary recompilation
-- Separate interfaces mean separate deployable components
-- Reduces the "fan-out" of dependencies
-
-### Dependency Inversion Principle (DIP)
-
-**"High-level modules should not depend on low-level modules. Both should depend on abstractions."**
-
-**"Abstractions should not depend on details. Details should depend on abstractions."**
-
-This is the most architecturally significant SOLID principle. It governs how boundaries are drawn and dependencies managed.
-
-**What to Depend On:**
-- Stable abstractions (interfaces, abstract classes)
-- Modules that change infrequently
-
-**What NOT to Depend On:**
-- Concrete implementations
-- Volatile modules (those likely to change)
-- Anything in the outer circles of the architecture
-
-**Inversion Example:**
-```
-// Without DIP - high-level depends on low-level
-class OrderService {
-    MySQLDatabase db = new MySQLDatabase();  // Direct dependency
-}
-
-// With DIP - both depend on abstraction
-interface OrderRepository { /* ... */ }
-
-class OrderService {
-    OrderRepository repo;  // Depends on abstraction
-}
-
-class MySQLOrderRepository implements OrderRepository { /* ... */ }
-```
-
-**The Architectural Impact:**
-- Source code dependencies oppose the flow of control
-- Control flows from controllers to use cases to entities
-- Dependencies point from controllers to use cases to entities
-- This makes business rules independent of delivery mechanisms
+**Examples:** Presenter (humble) / ViewModel (testable). Database Gateway (humble) / Interactor (testable).
 
 ---
 
-## Component Principles
-
-### What is a Component?
-
-A component is the unit of deployment - the smallest entity that can be deployed as part of a system. In Java, it's a JAR file. In Ruby, a gem. In .NET, a DLL.
-
-### Component Cohesion Principles
-
-#### REP: Reuse/Release Equivalence Principle
-
-**"The granule of reuse is the granule of release."**
-
-- Classes and modules grouped into a component should be releasable together
-- If you reuse one class, you implicitly reuse all classes in that component
-- Components should have a version number and release documentation
-- All classes in a component should share the same version
-
-**Implication:** Don't put unrelated classes together just because they're small. Users will be forced to track releases for things they don't use.
-
-#### CCP: Common Closure Principle
-
-**"Gather together those things that change at the same times and for the same reasons. Separate those things that change at different times or for different reasons."**
-
-This is SRP for components. A component should not have multiple reasons to change.
-
-**Benefits:**
-- Limits the number of components that need to be redeployed
-- Changes to business rules affect only business rule components
-- Changes to reporting affect only reporting components
-
-**Example:** If Order and OrderValidator always change together, put them in the same component. If they change independently, separate them.
-
-#### CRP: Common Reuse Principle
-
-**"Don't force users of a component to depend on things they don't need."**
-
-This is ISP for components. When you depend on a component, you depend on the entire component - every class in it.
-
-**Implication:** If you reuse one class from a component, you're coupled to ALL classes. If ANY class changes, your component may need to be redeployed.
-
-**Solution:** Keep components focused. Don't mix unrelated classes.
-
-### The Tension Triangle
-
-```
-        REP
-       /    \
-      /      \
-    CCP ---- CRP
-```
-
-These three principles are in tension:
-- **REP + CCP** = Group for reuse and closure = Components get large
-- **CCP + CRP** = Group for closure and minimal coupling = Hard to reuse
-- **CRP + REP** = Group for reuse and minimal coupling = Many small components, lots of releases
-
-**Resolution:** Start with CCP (minimize changes), then relax toward CRP (minimize dependencies), then REP (better packaging). The balance shifts as the system matures.
-
-### Component Coupling Principles
-
-#### ADP: Acyclic Dependencies Principle
-
-**"There must be no cycles in the component dependency graph."**
-
-The dependency graph must be a Directed Acyclic Graph (DAG).
-
-**The Morning After Syndrome:**
-You leave code working on Friday. Monday morning, it's broken because someone changed a component you depend on, and they depended on something you changed.
-
-**The Weekly Build Anti-Pattern:**
-Everyone ignores each other for four days, then spends Friday integrating. As systems grow, integration takes longer and longer.
-
-**Breaking Cycles:**
-
-Method 1: Dependency Inversion
-```
-// Before: A -> B -> C -> A (cycle!)
-// After: Extract interface, invert dependency
-A -> B -> C -> InterfaceA
-A implements InterfaceA
-```
-
-Method 2: Create New Component
-```
-// Extract the shared functionality into a new component D
-A -> D
-B -> D
-C -> D
-```
-
-#### SDP: Stable Dependencies Principle
-
-**"Depend in the direction of stability."**
-
-A component with many incoming dependencies is stable - it's hard to change because many other components would be affected.
-
-**Stability Metric (I):**
-```
-I = Fan-out / (Fan-in + Fan-out)
-
-Fan-in: Incoming dependencies (classes outside that depend on classes inside)
-Fan-out: Outgoing dependencies (classes inside that depend on classes outside)
-
-I = 0: Maximally stable (only incoming, no outgoing)
-I = 1: Maximally unstable (only outgoing, no incoming)
-```
-
-**Adults vs. Teenagers:**
-- **Adults (I = 0):** Responsible, independent, stable. Hard to change. Many depend on them.
-- **Teenagers (I = 1):** Irresponsible, dependent, unstable. Easy to change. No one depends on them.
-
-**The Rule:** Depend on components that are MORE stable than you. Unstable components can depend on stable ones, not vice versa.
-
-**Violation Example:**
-```
-Stable Component (I=0) --> Unstable Component (I=1)
-```
-This is wrong! The stable component will be hard to change, but it depends on something that changes frequently.
-
-#### SAP: Stable Abstractions Principle
-
-**"A component should be as abstract as it is stable."**
-
-Stable components should be abstract so they can be extended. Unstable components should be concrete since they'll change anyway.
-
-**Abstractness Metric (A):**
-```
-A = Na / Nc
-
-Na: Number of abstract classes and interfaces in component
-Nc: Total number of classes in component
-
-A = 0: Component is entirely concrete
-A = 1: Component is entirely abstract
-```
-
-**The Main Sequence:**
-
-Plot components on an A vs. I graph:
-```
-A (Abstractness)
-1 |  Zone of          .
-  |  Uselessness    .
-  |              .
-  |           .   <-- Main Sequence
-  |        .
-  |     .
-  |  .   Zone of Pain
-0 +--------------------> I (Instability)
-  0                    1
-```
-
-**Zone of Pain (0,0):** Highly stable AND highly concrete. Hard to change, and there's no way to extend it. Painful!
-- Example: Database schemas, String class (but non-volatile, so acceptable)
-
-**Zone of Uselessness (1,1):** Maximally abstract AND maximally unstable. No one depends on it, and it does nothing concrete. Useless!
-
-**The Main Sequence:** The line from (0,1) to (1,0). Well-designed components fall near this line.
-
-**Distance Metric (D):**
-```
-D = |A + I - 1|
-
-D = 0: Component is on the Main Sequence
-D = 1: Component is as far as possible from the Main Sequence
-```
-
-Track D over time. Components drifting away from the Main Sequence need attention.
-
----
-
-## Design Patterns for Architecture
-
-### The Humble Object Pattern
-
-Separate hard-to-test code from easy-to-test code by placing them in different classes.
-
-**The Pattern:**
-- **Humble Object:** Contains all the hard-to-test code (UI, database, etc.) but has very little logic
-- **Testable Object:** Contains all the business logic, receives/returns simple data structures
-
-**Examples in Clean Architecture:**
-- **Presenter (humble) / View Model (testable):** Presenter puts data into View Model strings
-- **Database Gateway (humble) / Interactor (testable):** Gateway handles SQL, Interactor handles logic
-- **Service Interface (humble) / Service Implementation (testable)**
-
-```
-// Humble - hard to test, minimal logic
-class OrderView {
-    void display(OrderViewModel vm) {
-        nameLabel.setText(vm.customerName);
-        totalLabel.setText(vm.formattedTotal);
-    }
-}
-
-// Testable - easy to test, all logic
-class OrderPresenter {
-    OrderViewModel present(OrderResponse response) {
-        return new OrderViewModel(
-            response.customerName,
-            "$" + response.total.setScale(2)
-        );
-    }
-}
-```
-
-### Singleton Pattern
-
-Ensures a class has only one instance and provides a global point of access.
-
-**Classic Implementation:**
-```java
-class Singleton {
-    private static Singleton instance;
-    private static boolean initialized = false;
-
-    private Singleton() {}
-
-    public static Singleton getInstance() {
-        if (!initialized) {
-            initialized = true;
-            instance = new Singleton();
-        }
-        return instance;
-    }
-}
-```
-
-**Thread-Safe Double-Checked Locking:**
-```java
-class Singleton {
-    private static volatile Singleton instance;
-
-    public static Singleton getInstance() {
-        if (instance == null) {
-            synchronized(Singleton.class) {
-                if (instance == null) {
-                    instance = new Singleton();
-                }
-            }
-        }
-        return instance;
-    }
-}
-```
-
-**Problems with Singleton:**
-- Global state makes testing difficult
-- Hidden dependencies
-- Violates SRP (managing instance AND functionality)
-- Hard to subclass
-
-**Prefer Monostate for testability.**
-
-### Monostate Pattern
-
-All instances share the same state through static members.
-
-```java
-class Monostate {
-    private static String sharedState;
-
-    public String getState() { return sharedState; }
-    public void setState(String s) { sharedState = s; }
-}
-```
-
-**Advantages over Singleton:**
-- Can be subclassed
-- Polymorphism works
-- Easier to test (can create test subclass)
-- Users don't need to know it's a "singleton"
-
-**Disadvantages:**
-- Can't convert normal class to Monostate without changing internals
-- Static state persists across tests (need cleanup)
-
-### Visitor Pattern
-
-Add operations to objects without modifying them. Implements "double dispatch."
-
-**The 90-Degree Rotation:**
-Traditional OOP: Type hierarchy on one axis, operations as methods
-Visitor: Type hierarchy on one axis, operations on another axis
-
-```java
-interface Shape {
-    void accept(ShapeVisitor visitor);
-}
-
-interface ShapeVisitor {
-    void visit(Circle c);
-    void visit(Rectangle r);
-}
-
-class AreaCalculator implements ShapeVisitor {
-    void visit(Circle c) { /* calculate circle area */ }
-    void visit(Rectangle r) { /* calculate rectangle area */ }
-}
-```
-
-**Trade-off:**
-- Easy to add new operations (new Visitor implementations)
-- Hard to add new types (must modify all Visitors)
-
-**When to Use:** When new operations are more common than new types.
-
-### Acyclic Visitor Pattern
-
-Breaks the dependency cycle in Visitor by using marker interfaces.
-
-```java
-interface Visitor {}  // Marker interface
-
-interface CircleVisitor {
-    void visit(Circle c);
-}
-
-interface RectangleVisitor {
-    void visit(Rectangle r);
-}
-
-class Circle implements Shape {
-    void accept(Visitor v) {
-        if (v instanceof CircleVisitor) {
-            ((CircleVisitor) v).visit(this);
-        }
-    }
-}
-
-class AreaCalculator implements Visitor, CircleVisitor, RectangleVisitor {
-    void visit(Circle c) { /* ... */ }
-    void visit(Rectangle r) { /* ... */ }
-}
-```
-
-**Trade-offs:**
-- No cycle in dependencies
-- Can add new types without modifying existing Visitors
-- Runtime type checking (performance cost, loss of type safety)
-- Sparse matrix of implementations
-
-### Proxy Pattern
-
-Provide a surrogate or placeholder for another object to control access.
-
-**Types:**
-- **Remote Proxy:** Represents object in different address space (RPC, sockets)
-- **Virtual Proxy:** Creates expensive object on demand
-- **Protection Proxy:** Controls access based on permissions
-- **Database Proxy:** Handles database connections and transactions
-
-```java
-interface Database {
-    void store(Object o);
-    Object retrieve(String id);
-}
-
-class DatabaseProxy implements Database {
-    private RealDatabase realDb;
-
-    void store(Object o) {
-        connect();
-        realDb.store(o);
-    }
-
-    private void connect() {
-        if (realDb == null) {
-            realDb = new RealDatabase();
-        }
-    }
-}
-```
-
-**Handle-Body Pattern:** Proxy (handle) wraps the real object (body). Multiple handles can share one body.
-
-### Observer Pattern
-
-Define a one-to-many dependency between objects so that when one object changes state, all its dependents are notified.
-
-**Pull Model:**
-```java
-interface Observer {
-    void update();  // No data passed
-}
-
-class Subject {
-    List<Observer> observers;
-
-    void notifyObservers() {
-        for (Observer o : observers) {
-            o.update();  // Observer must pull data
-        }
-    }
-}
-```
-
-**Push Model:**
-```java
-interface Observer {
-    void update(Event e);  // Data pushed to observer
-}
-```
-
-**Pull vs. Push:**
-- Pull: Observer has more control, but must know about Subject
-- Push: Subject has more control, Observer is more passive
-
-**Watch for:** Multiple inheritance issues when Subject also has business type hierarchy.
-
-### Factory Pattern
-
-Create objects without specifying exact classes.
-
-**Simple Factory:**
-```java
-class ShapeFactory {
-    Shape create(String type) {
-        switch(type) {
-            case "circle": return new Circle();
-            case "rectangle": return new Rectangle();
-        }
-    }
-}
-```
-
-**Abstract Factory:**
-```java
-interface GUIFactory {
-    Button createButton();
-    Window createWindow();
-}
-
-class MacFactory implements GUIFactory {
-    Button createButton() { return new MacButton(); }
-    Window createWindow() { return new MacWindow(); }
-}
-```
-
-**Factory and OCP:**
-Factories allow you to add new types without modifying client code - but the factory itself must be modified. This is an acceptable trade-off; you're localizing the change to one place.
-
-**Type Safety Trade-off:**
-Using strings or enums to select types abandons compile-time type safety. Accept this at the boundary where configuration meets code.
-
----
-
-## Boundaries and Boundary Crossing
-
-### What is a Boundary?
-
-A boundary is a line of separation between software components. Boundaries define what knows about what.
-
-### Types of Boundaries
-
-1. **Source-Level Boundaries:** Function calls within same codebase, separated by interfaces
-2. **Deployment Boundaries:** Separate JAR files, DLLs, deployed together
-3. **Service Boundaries:** Separate processes, network communication
-
-### Rules for Boundaries
-
-1. **Dependencies point inward** - toward higher-level policy
-2. **Data structures cross boundaries** - not entities or implementations
-3. **Lower-level components call higher-level interfaces** - not concrete classes
-4. **The boundary is defined by the interface** - not the implementation
-
-### Boundary Data Structures
-
-```java
-// Crossing into the use case
-class CreateOrderRequest {
-    String customerId;
-    List<String> productIds;
-    // Simple types only!
-}
-
-// Crossing out of the use case
-class CreateOrderResponse {
-    String orderId;
-    String status;
-    // Simple types only!
-}
-```
-
-**Never cross boundaries with:**
-- Entity objects
-- Database rows
-- Framework objects
-- Any class from another layer
-
-### The Dependency Inversion at Boundaries
-
-```
-┌─────────────────────────────────────────────────┐
-│                   Controller                     │
-│                      │                           │
-│                      ▼                           │
-│              <<interface>>                       │
-│            InputBoundary                         │
-│                      ▲                           │
-│                      │                           │
-│  ┌───────────────────┼───────────────────────┐  │
-│  │               Interactor                   │  │
-│  │                   │                        │  │
-│  │                   ▼                        │  │
-│  │           <<interface>>                    │  │
-│  │          OutputBoundary                    │  │
-│  └───────────────────┬───────────────────────┘  │
-│                      │                           │
-│                      ▼                           │
-│                  Presenter                       │
-└─────────────────────────────────────────────────┘
-
-Dependencies: Controller --> InputBoundary <-- Interactor --> OutputBoundary <-- Presenter
-```
-
-The Interactor sits in the center. It implements the InputBoundary and uses the OutputBoundary. Control flows through Interactor, but dependencies point toward it.
-
----
-
-## Database Independence
+## Database and Framework Independence
 
 ### The Database is a Detail
 
-The database is an IO device. From the business rules' perspective, it's just a way to persist and retrieve data. The specific database (MySQL, PostgreSQL, MongoDB) should not affect business rules.
-
-### Separating Database Concerns
-
-```
-┌─────────────────────────────────────────────────┐
-│                   Use Case                       │
-│                      │                           │
-│                      ▼                           │
-│              <<interface>>                       │
-│              DataGateway                         │
-│                      ▲                           │
-│                      │                           │
-│              DatabaseGateway                     │
-│                      │                           │
-│                      ▼                           │
-│                  Database                        │
-└─────────────────────────────────────────────────┘
-```
-
-**DataGateway Interface:** Defined by the use case layer, speaks in terms of entities and business concepts.
-
-**DatabaseGateway Implementation:** Lives in the outer layer, knows SQL, ORM, connection pooling, etc.
-
-### Why This Matters
-
-1. **Testability:** Use cases can be tested with in-memory implementations
-2. **Flexibility:** Can switch databases without changing business logic
-3. **Clarity:** Business rules aren't polluted with SQL
-4. **Performance optimization:** Database team can optimize without touching business code
-
----
-
-## Framework Independence
+The database is an I/O device. Business rules shouldn't know which database they use. Define a `DataGateway` interface in the use case layer; implement it in the outer layer with SQL/ORM/connection pooling.
 
 ### Frameworks are Details
 
-Frameworks are tools, not architectures. They should serve your architecture, not dictate it.
+Frameworks are tools, not architectures. The framework makes no commitment to you — you make a commitment to it.
 
-### The Asymmetric Marriage
+```
+// Bad — Entity coupled to framework
+class Customer:
+    [persistence annotations]
+    id
+    // business logic mixed with persistence concerns
 
-When you adopt a framework:
-- You make a commitment to the framework
-- The framework makes no commitment to you
-- You follow their conventions
-- They can change whenever they want
-
-### Protecting Against Framework Changes
-
-1. **Don't derive business entities from framework base classes**
-2. **Don't let framework annotations invade business logic**
-3. **Isolate framework dependencies to outer layers**
-4. **Use interfaces to abstract framework capabilities**
-
-```java
-// Bad - Entity coupled to framework
-@Entity
-@Table(name="customers")
-class Customer {
-    @Id
-    @GeneratedValue
-    Long id;
-    // Business logic mixed with persistence annotations
-}
-
-// Good - Entity is pure
-class Customer {
-    CustomerId id;
-    // Pure business logic
-}
+// Good — Entity is pure
+class Customer:
+    id: CustomerId
+    // pure business logic only
 
 // Framework details in outer layer
-@Entity
-@Table(name="customers")
-class CustomerJpaEntity {
-    @Id
-    @GeneratedValue
-    Long id;
-    // Only persistence concerns
-}
+class CustomerPersistenceModel:
+    [persistence annotations]
+    id
+    // only persistence concerns
 ```
 
----
-
-## Testing Architecture
-
-### The Testing Pyramid in Clean Architecture
-
-```
-           /\
-          /  \
-         /E2E \
-        /______\
-       /        \
-      /Integration\
-     /______________\
-    /                \
-   /    Unit Tests    \
-  /____________________\
-```
-
-### What Each Test Level Covers
-
-**Unit Tests:**
-- Entities and their business rules
-- Interactors with mock gateways
-- Presenters with test data
-- Isolated, fast, no I/O
-
-**Integration Tests:**
-- Interactors with real gateways (test database)
-- Controller to Presenter flows
-- Component boundaries
-
-**End-to-End Tests:**
-- Full stack with real UI, database, and services
-- Slow, fragile, few in number
-
-### Testing Through the Architecture
-
-```java
-// Testing an Interactor
-class CreateOrderTest {
-    @Test
-    void createsOrder() {
-        // Arrange
-        InMemoryOrderGateway gateway = new InMemoryOrderGateway();
-        TestPresenter presenter = new TestPresenter();
-        CreateOrderInteractor interactor =
-            new CreateOrderInteractor(gateway, presenter);
-
-        // Act
-        interactor.execute(new CreateOrderRequest("cust-1", List.of("prod-1")));
-
-        // Assert
-        assertEquals("ORD-001", presenter.response.orderId);
-        assertNotNull(gateway.find("ORD-001"));
-    }
-}
-```
-
-### The Humble Object Pattern in Testing
-
-UI components, database access, and external services are humble objects:
-- Contain minimal logic
-- Difficult to unit test
-- Tested through integration/E2E tests
-
-Business logic lives in testable objects:
-- Contains all decision-making
-- Easy to unit test
-- Covered thoroughly by unit tests
+Never derive business entities from framework base classes. Isolate framework dependencies to outer layers.
 
 ---
 
 ## Screaming Architecture
 
-### Architecture Should Scream Its Intent
+The top-level directory structure should tell you what the system **does**, not what frameworks it uses.
 
-When you look at the top-level directory structure, it should tell you what the system does, not what frameworks it uses.
-
-**Bad - Screams "Rails":**
 ```
-/app
-  /models
-  /views
-  /controllers
-/config
-/db
+// Bad — screams "Rails"          // Good — screams "Health Clinic"
+/app                               /patients
+  /models                          /appointments
+  /views                           /billing
+  /controllers                     /medical_records
 ```
 
-**Good - Screams "Health Clinic":**
-```
-/patients
-/appointments
-/billing
-/medical_records
-/prescriptions
-```
-
-### Package by Feature, Not Layer
-
-Group code by business capability, not technical role.
-
-**By Layer (avoid):**
-```
-/controllers
-  OrderController
-  CustomerController
-/services
-  OrderService
-  CustomerService
-/repositories
-  OrderRepository
-  CustomerRepository
-```
-
-**By Feature (prefer):**
-```
-/orders
-  CreateOrderUseCase
-  OrderController
-  OrderRepository
-/customers
-  RegisterCustomerUseCase
-  CustomerController
-  CustomerRepository
-```
+**Package by feature, not layer.** Group code by business capability: `/orders` contains CreateOrderUseCase, OrderController, OrderRepository together.
 
 ---
 
-## Common Architectural Mistakes
+## The Three Paradigms as Foundations
 
-### 1. Database-Driven Design
-Starting with the database schema and letting it drive the domain model. Instead, start with use cases and entities.
+**Structured Programming (concrete blocks):** Sequence, selection, iteration — sufficient for any computation.
 
-### 2. Framework-Driven Design
-Letting the framework dictate your architecture. The framework should live at the edges.
+**OO Programming (girders and beams):** The real power is safe polymorphism — inverting source code dependencies against the flow of control. Without this, Clean Architecture would be impossible.
 
-### 3. Putting Business Logic in Controllers
-Controllers should only:
-- Parse input
-- Call use case
-- Format output
+**Functional Programming (plumbing):** Immutability eliminates race conditions, deadlocks, concurrent update problems. Event Sourcing is FP's architectural manifestation.
 
-### 4. Passing Entities Across Boundaries
-Entities should stay within their layer. Use DTOs to cross boundaries.
-
-### 5. Circular Dependencies
-If A depends on B and B depends on A, you have a design problem. Use dependency inversion.
-
-### 6. God Classes
-Single classes that do everything. Split by responsibility.
-
-### 7. Feature Envy
-A class that uses another class's data more than its own. Move the behavior.
-
-### 8. Shotgun Surgery
-A single change requires modifications across many classes. Consolidate related functionality.
-
----
-
-## Memorable Quotes
-
-> "Architecture is about intent." - The structure should communicate what the system does.
-
-> "A good architecture maximizes the number of decisions not made." - Keep options open.
-
-> "The database is a detail." - Don't let it drive your architecture.
-
-> "Frameworks are details." - They serve you, not the other way around.
-
-> "The web is a detail." - HTTP is just a delivery mechanism.
-
-> "Good architecture makes the system easy to change." - That's the whole point.
-
-> "The first concern of the architect is to make sure that the house is usable, it is not to ensure that the house is made of brick." - Use cases come before technology choices.
-
-> "You can use an FP language and still make a huge OO mess. You can use an OO language and make beautiful FP code." - Paradigms are tools.
-
-> "There are two values of software: the behavior and the structure. The structure is more important." - A system that works but can't change is worthless.
-
-> "The goal of software architecture is to minimize the human resources required to build and maintain the required system." - It's about economics.
-
-> "Stable components should be abstract. Unstable components should be concrete."
-
-> "Adults are responsible and independent. Teenagers are irresponsible and dependent." - On component stability.
-
-> "The morning after syndrome - you leave Friday with working code, Monday it's broken." - Why we need acyclic dependencies.
-
----
-
-## Architecture Review Checklist
-
-Use this checklist when reviewing architecture decisions:
-
-### Dependency Rule
-- [ ] Do all dependencies point inward toward higher-level policy?
-- [ ] Are entities free of framework dependencies?
-- [ ] Are use cases free of UI and database details?
-- [ ] Are there any circular dependencies?
-
-### Boundaries
-- [ ] Are boundaries defined by interfaces, not implementations?
-- [ ] Do data structures cross boundaries, not entities?
-- [ ] Is Dependency Inversion applied at each boundary?
-
-### Components
-- [ ] Is the component graph acyclic (DAG)?
-- [ ] Do stable components depend on nothing?
-- [ ] Do unstable components depend on stable abstractions?
-- [ ] Are components cohesive (CCP, REP, CRP balanced)?
-
-### SOLID
-- [ ] Does each class have a single responsibility?
-- [ ] Can new behavior be added without modifying existing code?
-- [ ] Are subtypes substitutable for their base types?
-- [ ] Are interfaces segregated for different clients?
-- [ ] Do high-level modules depend on abstractions?
-
-### Testability
-- [ ] Can business rules be tested without UI, database, or external services?
-- [ ] Are humble objects minimal?
-- [ ] Can gateways be easily mocked?
-
-### Intent
-- [ ] Does the architecture scream its business purpose?
-- [ ] Are packages organized by feature, not layer?
-- [ ] Can a new developer understand the domain from the structure?
-
----
-
-## When to Apply These Principles
-
-### For Small Projects
-- Focus on use cases and entities first
-- Keep boundaries simple (interfaces within same codebase)
-- Don't over-engineer component structure
-
-### For Growing Projects
-- Introduce explicit boundaries as complexity grows
-- Extract components as teams grow
-- Monitor dependency metrics
-
-### For Large Systems
-- Full Clean Architecture with all layers
-- Multiple deployable components
-- Formal component dependency management
-- Continuous architectural fitness functions
-
-### Remember
-The goal is not perfect adherence to all principles, but a system that:
-1. Is easy to understand
-2. Is easy to change
-3. Is easy to test
-4. Communicates its intent
-
-**Start simple. Add complexity only when needed. Always ask: "Does this make the system easier to change?"**
-
----
-
-## The Constancy of Architecture
-
-Architecture rules are independent of ALL variables -- hardware, languages, frameworks, tools. The rules of software have not changed since 1945.
-
-> "The rules of software are independent of every other variable. The hardware has changed by a factor of ten to the twenty-second since I started in this business, and the rules haven't changed at all."
-
-Hardware has improved by approximately 60 septillion (60 x 10^24) times since the 1960s. Despite this astronomical change, software architecture rules remain identical. Software is still made of sequence, selection, and iteration -- nothing else has been added since those were formalized.
-
-**Architecture is NOT about adapting to new technology.** The rules that governed Fortran programs in the 1960s still govern microservices today.
-
-### Architecture = Design = Programming: The Continuum
-
-There is no firm dividing line between architecture, design, and programming. They form a continuum.
-
-- Architecture is not a separate activity performed by separate people
-- When you are programming, you are making architectural decisions
-- When you are designing, you are thinking about code
-- The distinction between "architect" and "programmer" is misleading
-
-> "The architect who does not write code is no architect at all."
-
----
-
-## The Two Values of Software
-
-Software has exactly two values: **behavior** and **structure**. Structure (the ability to change) is MORE important than behavior (what the software currently does).
-
-- A system that works perfectly but cannot be changed is worthless -- because requirements WILL change
-- A system that does not work but CAN be changed is valuable -- because you can make it work
-- Most managers prioritize behavior (urgent) over structure (important) -- this is the wrong priority
-
-> "There are two values of software: the value of its behavior, and the value of its structure. And you might be surprised to learn that of the two, the value of the structure is the greater."
-
-### Eisenhower Matrix Applied to Architecture
-
-- Behavior is URGENT but not always IMPORTANT
-- Architecture is IMPORTANT but not always URGENT
-- The urgent drives out the important unless architects fight back
-- Architecture never feels pressing until it is too late
-
----
-
-## The Three Paradigms as Architectural Foundations
-
-The three programming paradigms are structural elements of the architectural building:
-
-### Structured Programming = Concrete Blocks
-
-- Provides the basic control flow: sequence, selection, iteration
-- Dijkstra proved these three are sufficient for any computation
-- Architecture at the algorithmic level
-
-### Object-Oriented Programming = Girders and Beams
-
-- The REAL power of OO is NOT encapsulation, NOT inheritance
-- The real power is **SAFE POLYMORPHISM** -- the ability to invert source code dependencies
-- OO allows source code dependencies to point AGAINST the flow of control
-- This is what makes the Dependency Rule possible
-- Without OO's dependency inversion capability, Clean Architecture would be impossible
-
-### Functional Programming = Plumbing
-
-- Provides immutability -- data that cannot change
-- Eliminates race conditions, deadlocks, concurrent update problems
-- Makes data transport safe within the architecture
-- Event Sourcing is the architectural manifestation of functional programming
-
-### What Each Paradigm Removes
-
-- Structured programming removes unrestrained goto
-- OO removes function pointers (replaces with safe polymorphism)
-- FP removes assignment (removes mutable state)
-
-> "The three paradigms together remove goto, remove function pointers, and remove assignment. And what's left? Not much."
+Each paradigm removes something: structured removes goto, OO removes function pointers (replaces with safe polymorphism), FP removes assignment.
 
 ---
 
 ## Event Sourcing
 
-Event Sourcing stores **transactions (events)** rather than state. Instead of mutating a record, you append a new event.
+Store transactions (events) rather than state. CRUD becomes CR — no updates, no deletes, only new events. Current state is computed by replaying events.
 
-### CRUD Becomes CR
-
-- Traditional: Create, Read, Update, Delete
-- Event Sourcing: Create, Read only
-- No Update or Delete -- only new events representing changes
-- Current state is computed by replaying all events from the beginning
-
-> "CRUD becomes CR. There is no update and there is no delete. You only create new records, and you read existing ones."
-
-### Git as Event Sourcing
-
-- Git is event sourcing applied to source code
-- You never modify a commit -- only add new commits
-- Current state = result of applying all commits in sequence
-- Branching, merging, reverting possible because event history is immutable
-- Can reconstruct any past state by replaying events
-
-### Architectural Implications
-
-- No mutable state = no race conditions
-- No concurrent update problems (no updates)
-- No need for traditional locks or transactions
-- Storage is the main concern (event logs grow without bound, but storage is cheap)
-- The vast majority of business rules can be purely functional
+Git is event sourcing for source code. No mutable state means no race conditions, no concurrent update problems, no need for traditional locks.
 
 ---
 
 ## The Decoupling Modes Spectrum
 
-A spectrum from tightest to loosest coupling:
+From tightest to loosest: Static Monolith → Dynamic Linking → Threads → Processes → Services/Microservices.
 
-1. **Static Monolith** -- everything compiled and linked together
-2. **Dynamic Linking** -- DLLs, JARs, shared libraries loaded at runtime
-3. **Threads** -- separate threads within one process
-4. **Processes** -- separate OS processes via IPC
-5. **Services/Microservices** -- separate deployable units via network
-
-**Architecture should be INDEPENDENT of the decoupling mode.** You should be able to move up and down this spectrum without changing the architecture. The same source code boundaries should work whether deployed as monolith or microservices.
-
-> "Microservices are a deployment strategy, not an architectural strategy."
+**Architecture should be independent of decoupling mode.** The same source code boundaries should work whether deployed as monolith or microservices. Microservices are a deployment strategy, not an architectural strategy.
 
 ---
 
 ## The Main Module
 
-The Main module is the DIRTIEST, LOWEST-LEVEL module in the system.
+Main is the dirtiest, lowest-level module — where all SOLID principles are violated, and that's acceptable. It creates concrete instances, wires dependencies, and knows about everything. All dependencies point away from Main.
 
-### Characteristics
-
-- Where ALL SOLID principles are violated -- and that is ACCEPTABLE
-- Creates concrete instances and wires them together
-- Knows about everything (all concrete classes, all frameworks)
-- ALL dependencies point AWAY from Main -- nothing depends on Main
-- It is the "ultimate detail" -- the lowest of the low
-
-### Multiple Main Modules
-
-You can have MULTIPLE main modules for different configurations:
-- One Main for production deployment
-- One Main for testing/QA
-- One Main for development
-- Each wires up different concrete implementations
-- Powerful configuration strategy
-
-### Tests as the Lowest-Level Module
-
-Tests are even lower level than Main:
-- Tests depend on everything but nothing depends on tests
-- They follow the dependency rule: all test dependencies point inward
-- Changes to tests never affect production code
+You can have multiple Main modules: one for production, one for testing, one for development — each wiring different concrete implementations. Tests are even lower than Main — they depend on everything, nothing depends on them.
 
 ---
 
-## Expanded Boundary Concepts
+## Types of Boundaries
 
-### Architecture is About Productivity, Not Behavior
+Not all boundaries are the same. Choose based on the system's needs:
 
-> "The purpose of architecture is not to get the system to work. The purpose of architecture is to make the system productive for the developers."
+1. **Source-Level Boundaries** — Function calls within the same codebase, separated by interfaces. Cheapest to create, easiest to change. Start here.
+2. **Deployment Boundaries** — Separate JARs, DLLs, gems deployed together but compiled independently. Changes to one don't force recompilation of others.
+3. **Service Boundaries** — Separate processes communicating over the network. Most expensive, most independent. Only use when deployment independence is essential.
 
-### Independence from Three Forces
-
-Boundaries should be drawn to achieve independence from:
-
-1. **Change Frequency** -- Things that change at different rates should be separated
-2. **Cost of Change** -- Things with different costs of getting wrong should be separated
-3. **Risk** -- Things with different risk profiles should be separated
-
-Higher risk code should depend on nothing; everything should depend on it.
-
-### Independence Through Irrelevance
-
-Use cases that are unrelated should have NO connections between them. Not just loose coupling -- NO coupling. If something is irrelevant to you, you should not depend on it at all.
-
-### Source Code Dependencies as Propagation Pathways
-
-Source code dependencies define three things:
-1. **Compilation order** -- what must be compiled before what
-2. **Release order** -- what must be released before what
-3. **Change propagation pathway** -- when something changes, what else might need to change
-
-### The Soap Bubble Analogy
-
-Boundaries are like soap bubbles or cell membranes:
-- Thin but critical
-- Selectively permeable
-- Define inside and outside
-- Protect interior from exterior
-- FLEXIBLE -- can reshape without breaking
+**Strategy:** Start with source-level boundaries. Promote to deployment or service boundaries only when the cost of coupling exceeds the cost of separation. Components define the fracture lines — draw architectural boundaries along them later, when you know more.
 
 ---
 
-## Components vs. Architectural Elements
+## Testing Architecture
 
-### Components
+Clean Architecture makes testing natural — business rules live in the center, free of frameworks and I/O.
 
-The smallest independently deployable units (JARs, DLLs, gems):
-- Statically linked at compile time, or dynamically linked at runtime, or completely unlinked services
-- Always: cohesive bundles of functions
+**Unit tests** cover entities and interactors with mock gateways. Fast, isolated, no I/O. The bulk of your tests live here.
 
-### Architectural Elements
+**Integration tests** cover interactors with real gateways (test database), controller-to-presenter flows, and component boundaries.
 
-GROUPINGS of components:
-- A microservice is an architectural element containing many components
-- Architectural boundaries cut across component RELATIONSHIPS, never through components
-- Components define "fracture lines" -- potential places where boundaries can be drawn
+**End-to-end tests** cover the full stack. Slow, fragile, few in number. Verify wiring, not logic.
 
-> "Components provide the structure for all the possible different architectures and allow us to decide LATER what the architectural boundaries of the system are actually going to be."
-
-### The Key Strategy
-
-1. Do the component structure FIRST
-2. Those components define the fracture lines
-3. LATER, when you know more, draw the architectural boundaries along those fracture lines
-4. This is how you DEFER the microservices/monolith decision
+The Humble Object pattern is the key: UI, database, and external services are humble (minimal logic, hard to test). Business logic is testable (all decisions, easy to unit test). If you can't test business rules without starting a web server or connecting to a database, the architecture has failed.
 
 ---
 
-## SOLID at the Architectural Level
+## Common Architectural Mistakes
 
-### ISP Origin Story
-
-The Interface Segregation Principle was born at Xerox:
-- One giant interface used by all clients of a copier/printer system
-- Compile times were 45 minutes because ANY change forced everything to recompile
-- Uncle Bob segregated the interface into smaller, client-specific interfaces
-- Compile times dropped to about 5 minutes
-- At the architectural level: don't depend on frameworks, libraries, or services you don't fully use
-
-### LSP at the Architectural Level
-
-Beyond class inheritance -- conformance to interfaces across deployment boundaries:
-- Services conforming to a common interface ARE subtypes
-- If not properly substitutable, you get architectural coupling via special-case if-statements
-- Forces you to abandon independent deployability
-
-### OCP via Data-Driven Systems
-
-- Drive the system with data rather than code changes
-- Configuration files, rule engines, data tables
-- OCP at scale: extend by changing data, not code
-- Warning: Greenspan's 10th Rule -- accidentally building a full programming language
-
-### Conway's Law and Inverse Conway's Law
-
-**Conway's Law:** Organizations produce designs that copy their communication structures.
-
-**Inverse Conway's Law (Uncle Bob's interpretation):**
-- Architecture should reflect the USER organization, not the DEVELOPER organization
-- SRP says modules should be responsible to actors (user roles)
-- Organize code by user role/actor rather than by technical layer
+1. **Database-Driven Design** — Starting with the schema instead of use cases and entities
+2. **Framework-Driven Design** — Letting the framework dictate architecture instead of living at the edges
+3. **Business Logic in Controllers** — Controllers should only parse input, call use case, format output
+4. **Entities Crossing Boundaries** — Use DTOs; entities stay in their layer
+5. **Circular Dependencies** — Use dependency inversion to break cycles
+6. **Ignoring Structure for Behavior** — Prioritizing "make it work" over "make it changeable"
 
 ---
 
-## The Web and Database as Non-Architectural Events
+## When Writing Architecture
 
-### The Web
+### Implementation Steps
 
-- Late 1990s: everyone thought the web was a massive architectural change
-- The .com bubble burst in 2001
-- It took 10 years to realize: the web is just an I/O device
-- Similar to old IBM 3270 green-screen terminals
-- Web code is low-level code -- keep it away from business rules
+1. **Define the Use Case** — What is the application doing? What are inputs (Request Model) and outputs (Response Model)?
+2. **Identify Entities** — What business objects are involved? What rules do they encapsulate?
+3. **Define Gateway Interfaces** — What external data is needed? Define interfaces in the use case layer
+4. **Implement the Interactor** — Pure business logic using entities and gateways
+5. **Create Interface Adapters** — Controller, Presenter, Gateway implementations
+6. **Wire Up Framework Layer** — Connect to web/database, inject dependencies pointing inward
 
-> "It took us a long time, but we finally realized that this big architectural change over the web was not, in fact, an architectural change at all."
+### Scale Guidance
 
-### The Database
+**Small projects:** Focus on use cases and entities. Keep boundaries simple. Don't over-engineer.
 
-- Database vendors spent decades marketing databases as THE center of the enterprise
-- In reality, the database is an I/O device -- it stores and retrieves data
-- The database should be a DETAIL, plugged in at the outer layer
-- Business rules should not know which database they use
+**Growing projects:** Introduce explicit boundaries as complexity grows. Extract components as teams grow.
 
----
-
-## Framework Commitment Asymmetry
-
-> "You are committed to that framework. But how committed is that framework to you?"
-
-When you commit to a framework:
-- YOU make a huge commitment
-- The framework makes NO commitment to you
-- The framework author can change direction, abandon the project, or deprecate features
-- You are left dealing with the consequences
-
-**Defensive Architecture:**
-- Keep frameworks at arm's length
-- Keep frameworks in the lowest-level position possible
-- Never let framework code infiltrate business rules
-- Use frameworks carefully and wisely
+**Large systems:** Full Clean Architecture with all layers. Multiple deployable components. Monitor dependency metrics (see `/components` for I, A, D metrics).
 
 ---
 
-## The Tortoise and the Hare
+## When Reviewing Architecture
 
-The hare (rushing, no architecture, no tests) starts fast. The tortoise (TDD, clean architecture, discipline) starts slower. The tortoise always wins because the hare eventually drowns in its own mess.
+### Checklist
 
-Jason Gorman's TDD experiment: same kata performed multiple times, half with TDD, half without. TDD was consistently about 10% FASTER but always FELT slower.
+**Dependency Rule:**
+- Do all dependencies point inward?
+- Are entities free of framework dependencies?
+- Are use cases free of UI and database details?
+- Any circular dependencies?
 
-> "The only way to go fast is to go well."
+**Boundaries:**
+- Defined by interfaces, not implementations?
+- Data structures (not entities) crossing boundaries?
+- Dependency Inversion at each boundary?
 
-> "TDD was about 10% faster every single time, but it always, always felt slower."
+**Testability:**
+- Can business rules be tested without UI/database/external services?
+- Are humble objects minimal?
+- Can gateways be easily mocked?
 
----
+**Intent:**
+- Does the architecture scream its business purpose?
+- Packages organized by feature, not layer?
 
-## Additional Memorable Quotes
+### Severity Levels
 
-> "The goal of software architecture is to minimize the human resources required to build and maintain the system."
-
-> "Software was invented before computers."
-
-> "The real power of object-oriented programming is the ability to invert source code dependencies against the flow of control."
-
-> "Functional programming is the plumbing of our architectural building."
-
-> "A good architect keeps as many options open as possible, for as long as possible."
-
-> "We never want things that are hard to change to depend upon things that we intend to be easy to change."
-
----
-
-## Feature to Implement
-
-$ARGUMENTS
-
-## Implementation Steps
-
-1. **Define the Use Case**
-   - What is the application trying to do?
-   - What are the inputs (Request Model)?
-   - What are the outputs (Response Model)?
-
-2. **Identify Entities**
-   - What business objects are involved?
-   - What business rules do they encapsulate?
-
-3. **Define Gateway Interfaces**
-   - What external data is needed?
-   - Define interfaces in the use case layer
-
-4. **Implement the Interactor**
-   - Pure business logic
-   - Uses entities and gateways
-   - Returns response model
-
-5. **Create Interface Adapters**
-   - Controller to handle input
-   - Presenter to format output
-   - Gateway implementations
-
-6. **Wire Up Framework Layer**
-   - Connect to web framework
-   - Connect to database
-   - Inject dependencies (pointing inward)
+| Severity | Type | Example |
+|----------|------|---------|
+| Critical | Dependency Rule violation — inner layer depends on outer | Entity imports Spring annotations |
+| High | Entities crossing boundaries, circular dependencies | Use case returns JPA entity |
+| Medium | Business logic in controllers, framework-driven structure | Validation rules in REST handler |
+| Low | Package-by-layer instead of package-by-feature | `/controllers` + `/services` instead of `/orders` |
 
 ---
 
 ## Related Skills
 
-- **/solid** - SOLID principles for component and class design within architectural boundaries
-- **/components** - Component cohesion and coupling principles (REP, CCP, CRP, ADP, SDP, SAP)
-- **/tdd** - TDD enables fearless refactoring and the tortoise's advantage
-- **/functional-programming** - FP provides immutability and event sourcing foundations
-- **/acceptance-testing** - Architecture must support testability without UI
-- **/agile** - Agile practices require clean architecture for sustainable velocity
-- **/legacy-code** - Strangulation technique uses architectural boundaries
-- **/professional** - Apply professional standards workflow for code quality
-- **/clean-code-review** - Verify architectural decisions after implementation
+- `/solid` — SOLID principles for class-level design within architectural boundaries
+- `/components` — Component cohesion and coupling (REP, CCP, CRP, ADP, SDP, SAP) with stability metrics
+- `/patterns` — Design patterns that implement architectural concepts (Factory, Observer, Visitor, Proxy)
+- `/tdd` — TDD enables fearless refactoring and the tortoise's advantage
+- `/functional-programming` — FP provides immutability foundations for event sourcing
+- `/professional` — Professional standards for architectural decisions

@@ -1,7 +1,7 @@
 ---
 name: teach-concept
 description: >-
-  Explain Clean Code concepts with examples, quotes, and practical guidance.
+  Explain Clean Code concepts with examples and practical guidance.
   Activates when the user asks to explain or learn about Clean Code concepts,
   wants to understand principles, or mentions teach, explain, what is, how does,
   or why should related to Clean Code topics.
@@ -11,165 +11,110 @@ argument-hint: [concept name - e.g., "SOLID", "TDD", "naming", "functions"]
 
 # Teach Clean Code Concept
 
-Explain the requested Clean Code concept using Uncle Bob's teachings.
+Teaching methodology for Clean Code principles. This is a meta-skill — it defines HOW to teach, then delegates to specialized skills for WHAT to teach.
 
-## Teaching Workflow
+For lesson plan examples and teaching walkthroughs, read `references/extended-examples.md`.
 
-1. **Identify the Concept** - Determine which Clean Code concept the user wants to learn
-2. **Load Specialized Skill** - Use the appropriate skill for comprehensive content
-3. **Teach with Depth** - Provide examples, quotes, and practical guidance from the skill
+---
 
-## Related Skills by Concept
+## Teaching Methodology
 
-When teaching specific concepts, load the appropriate specialized skill for comprehensive content:
+### 1. Meet Them Where They Are
 
-| Concept Category | Skill to Use | When to Load |
-|------------------|--------------|--------------|
-| Naming | `/naming` | Variables, functions, classes, packages naming conventions |
-| Functions | `/functions` | Function design, size, arguments, side effects |
-| SOLID | `/solid` | Any SOLID principle (SRP, OCP, LSP, ISP, DIP) |
-| Testing | `/tdd` | TDD, three laws, clean tests, test design |
-| Architecture | `/architecture` | Clean Architecture, layers, boundaries, use cases |
-| Patterns | `/patterns` | Design patterns, state machines, factories |
-| Professionalism | `/professional` | Estimates, saying no, ethics, programmer's oath |
-| Components | `/components` | Component cohesion, coupling, REP, CCP, CRP |
-| Acceptance Testing | `/acceptance-testing` | ATDD, testing pyramid, BDD, fixtures, stakeholder communication |
-| Agile | `/agile` | Agile practices, velocity, planning, CI, Definition of Done |
-| Functional Programming | `/functional-programming` | Pure functions, immutability, FP patterns, functional SOLID |
-| Legacy Code | `/legacy-code` | Boy Scout Rule, characterization tests, strangulation technique |
-| Code Review | `/clean-code-review` | Reviewing code for clean code principles |
+Before explaining a concept, understand the learner's context. Are they a junior developer hearing about SOLID for the first time, or an experienced developer who wants to understand why their current approach isn't working? The same concept needs different framing at different levels.
 
-### How to Use Related Skills
+**Beginner:** Start with the problem the concept solves. "Have you ever changed one thing and broken something else? That's what SRP prevents." Concrete, relatable, immediate.
 
-When the user asks about a concept:
+**Intermediate:** Connect to concepts they already know. "You already extract functions to avoid duplication. SOLID is the same instinct applied at the class level." Build bridges from familiar to new.
 
-1. **Match the concept to a skill category** from the table above
-2. **Invoke the skill** using the Skill tool:
-   - For naming: `Skill: naming`
-   - For functions: `Skill: functions`
-   - For SOLID principles: `Skill: solid`
-   - For testing/TDD: `Skill: tdd`
-   - For architecture: `Skill: architecture`
-   - For patterns: `Skill: patterns`
-   - For professionalism: `Skill: professional`
-   - For components: `Skill: components`
-   - For acceptance testing: `Skill: acceptance-testing`
-   - For agile: `Skill: agile`
-   - For functional programming: `Skill: functional-programming`
-   - For legacy code: `Skill: legacy-code`
-   - For review: `Skill: clean-code-review`
-3. **Use the skill's content** to provide comprehensive teaching
+**Advanced:** Go straight to the tension and tradeoffs. "SRP and OCP can conflict — splitting a class for SRP can violate OCP if the split forces changes across callers. Here's how to navigate that."
 
-## Teaching Approach
+### 2. Show, Don't Lecture
 
-1. **Definition** - Clear, concise explanation of the concept
-2. **Why It Matters** - The reasoning and benefits
-3. **The Rules** - Specific guidelines to follow
-4. **Good Examples** - Code that demonstrates the concept well
-5. **Bad Examples** - Anti-patterns to avoid
-6. **Memorable Quotes** - Uncle Bob's key phrases
-7. **Practical Tips** - How to apply it in daily coding
+Every concept needs a code example — ideally a before/after transformation that makes the benefit tangible. Abstract explanations of principles bounce off. Watching messy code become clean sticks.
 
-## Available Topics
+Use pseudocode (language-independent). Walk through the transformation step by step — don't just show the end state. The journey from bad to good is where understanding lives.
 
-### Core Concepts
+### 3. Use the Concrete-to-Abstract Arc
 
-- **naming** - How to name variables, functions, classes
-- **functions** - Writing small, focused functions
-- **classes** - Designing cohesive classes
-- **comments** - When and how to comment
-- **formatting** - Code organization and style
-- **error-handling** - Exceptions and edge cases
+Start with a concrete problem: "This function is 200 lines long and nobody understands it." Show the fix: extract functions, name them well, apply step-down rule. THEN name the principle: "What we just did is called the Single Responsibility Principle." The principle becomes a label for something they've already seen working.
 
-### SOLID Principles
+Never start with the abstract definition. "The Single Responsibility Principle states that a class should have only one reason to change" means nothing until someone has felt the pain of a class with five reasons to change.
 
-- **srp** - Single Responsibility Principle
-- **ocp** - Open-Closed Principle
-- **lsp** - Liskov Substitution Principle
-- **isp** - Interface Segregation Principle
-- **dip** - Dependency Inversion Principle
-- **solid** - All five principles together
+### 4. Connect Concepts into a Web
 
-### Testing
+Clean Code principles are not isolated — they form a web where each principle reinforces others. When teaching one concept, show how it connects:
 
-- **tdd** - Test-Driven Development
-- **three-laws** - The Three Laws of TDD
-- **clean-tests** - Writing maintainable tests
-- **mocking** - When and how to use test doubles
+- Naming → Functions: good function names make functions self-documenting
+- Functions → SOLID: small functions emerge naturally from SRP classes
+- SOLID → Architecture: DIP at the class level becomes the Dependency Rule at the architecture level
+- TDD → Refactoring: tests enable fearless refactoring
+- Refactoring → Clean Code: refactoring is how messy code becomes clean
+- Architecture → Components: Clean Architecture applies component principles at the system level
 
-### Architecture
+Always mention at least one connection. Isolated principles feel like rules to memorize. Connected principles feel like a system to understand.
 
-- **clean-architecture** - Layers and boundaries
-- **use-cases** - Application business rules
-- **dependency-rule** - Dependencies point inward
-- **components** - Component design principles
+### 5. Address the "Why Should I Care?"
 
-### Patterns
+Every concept needs a motivation that goes beyond "Uncle Bob says so." Connect to consequences the learner has experienced or will experience:
 
-- **factory** - Factory patterns
-- **strategy** - Strategy pattern
-- **observer** - Observer pattern
-- **state** - State pattern and FSMs
+- "Without SRP, every feature change risks breaking unrelated features."
+- "Without TDD, you're afraid to refactor, and without refactoring, the code rots."
+- "Without the Dependency Rule, your business logic is locked inside your framework."
 
-### Acceptance Testing
+The best motivations are stories of real consequences — Knight Capital ($460M from dead code), Toyota (89 deaths from 10K global variables), the death spiral of Flaccid Scrum. Use them from the relevant skill's references.
 
-- **acceptance-testing** - ATDD and acceptance test workflow
-- **testing-pyramid** - Unit, functional, acceptance, UI test layers
-- **bdd** - Behavior-Driven Development and Given/When/Then
-- **fixtures** - Connecting acceptance tests to production code
-- **fitnesse** - Wiki-based acceptance testing framework
+### 6. Give Them Something to Do
 
-### Agile
+End every teaching session with a challenge or exercise. "Take your longest function and extract three methods from it using the step-down rule." "Find a class in your codebase that has more than one reason to change and sketch how you'd split it." Learning without practice doesn't stick.
 
-- **agile** - Agile principles and practices
-- **velocity** - Measuring and maintaining honest velocity
-- **definition-of-done** - What "done" really means
-- **planning-game** - Estimation and iteration planning
-- **continuous-integration** - CI practices and pipeline discipline
-- **flaccid-scrum** - How Agile goes wrong without technical practices
+---
 
-### Functional Programming
+## Teaching Anti-Patterns
 
-- **functional-programming** - FP principles and practices
-- **pure-functions** - Referential transparency and side effects
-- **immutability** - State management without mutation
-- **map-filter-reduce** - Higher-order function patterns
-- **functional-solid** - SOLID principles in functional code
-- **composition** - Building large from small through function composition
+**The Definition Dump.** Listing all five SOLID principles with their formal definitions. This teaches vocabulary, not understanding. Instead, pick one principle, show it working on real code, and let the others emerge naturally.
 
-### Legacy Code
+**The Perfection Trap.** Implying that clean code is an absolute standard and any deviation is wrong. Clean code is a direction, not a destination. The goal is code that is cleaner than it was, not code that is perfect.
 
-- **legacy-code** - Working with old, untested code
-- **boy-scout-rule** - Always leave code cleaner than you found it
-- **characterization-tests** - Golden standard testing for legacy modules
-- **strangulation** - Safely rewriting surrounded legacy code
+**The Authority Argument.** "Uncle Bob says you must do TDD." This creates compliance, not conviction. Instead: "Here's what happens to a codebase without tests over 12 months" — let the evidence convince, not the authority.
 
-### Professional
+**The Firehose.** Teaching 10 concepts in one session. Learners can absorb 1-2 new ideas per session. Go deep on one concept rather than shallow on many.
 
-- **estimates** - How to estimate responsibly
-- **saying-no** - Professional boundaries
-- **programmers-oath** - The commitments we make
+**Ignoring Their Codebase.** Teaching with textbook examples when the learner has a real codebase to work with. If they have code, use their code. The concepts become immediately relevant rather than theoretical.
 
-## Requested Topic
+---
 
-$ARGUMENTS
+## Skill Routing
 
-## Related Skills
+When teaching a specific concept, delegate to the specialized skill for comprehensive content:
 
-The following skills provide comprehensive content for teaching Clean Code concepts:
-
-| Skill | Command | Purpose |
-|-------|---------|---------|
-| Naming | `/naming` | Comprehensive naming conventions and guidelines |
-| Functions | `/functions` | Function design principles and best practices |
-| SOLID | `/solid` | All five SOLID principles with examples |
-| TDD | `/tdd` | Test-Driven Development methodology |
-| Architecture | `/architecture` | Clean Architecture principles and patterns |
-| Patterns | `/patterns` | Design patterns for clean code |
-| Professional | `/professional` | Professional ethics and practices |
-| Components | `/components` | Component design and cohesion principles |
+| Concept | Skill | Key Topics |
+|---------|-------|------------|
+| Naming | `/naming` | Intent-revealing names, parts of speech, vocabulary |
+| Functions | `/functions` | Size, arguments, side effects, step-down rule |
+| SOLID | `/solid` | SRP, OCP, LSP, ISP, DIP |
+| Testing & TDD | `/tdd` | Three laws, clean tests, test design |
+| Architecture | `/architecture` | Layers, boundaries, use cases, Dependency Rule |
+| Design Patterns | `/patterns` | GOF patterns, when to apply, when to avoid |
+| Components | `/components` | REP, CCP, CRP, ADP, SDP, SAP, Main Sequence |
 | Acceptance Testing | `/acceptance-testing` | ATDD, testing pyramid, BDD, fixtures |
-| Agile | `/agile` | Agile practices, velocity, planning, CI |
-| Functional Programming | `/functional-programming` | Pure functions, immutability, FP patterns |
+| Agile | `/agile` | Velocity, planning, CI, Definition of Done |
+| Functional Programming | `/functional-programming` | Purity, immutability, composition, functional SOLID |
 | Legacy Code | `/legacy-code` | Boy Scout Rule, characterization tests, strangulation |
-| Clean Code Review | `/clean-code-review` | Code review using clean code standards |
+| Professional Standards | `/professional` | Programmer's Oath, estimation, saying no, ethics |
+| Code Review | `/clean-code-review` | 10-dimension review, severity classification |
+| Refactoring | `/refactor-suggestion` | Code smells, safe refactoring, techniques |
+
+Each skill has a `references/extended-examples.md` file with detailed walkthroughs — use these for in-depth teaching.
+
+---
+
+## Handling Common Questions
+
+**"Isn't this over-engineering?"** Clean code is about simplicity, not complexity. If applying a principle makes the code harder to understand, you've misapplied it. The goal is code that reads like well-written prose — not code that demonstrates how many patterns you know.
+
+**"We don't have time for this."** The mess is what slows you down. Every shortcut creates drag that compounds over time. The only way to go fast is to go well. Use the Agile death spiral example from `/agile` references.
+
+**"This doesn't apply to our language/framework."** Clean Code principles are language-independent. The specific syntax changes, but the reasoning is universal: small functions, clear names, single responsibility, dependency inversion. Show them the pseudocode examples, then help them translate to their stack.
+
+**"My team won't adopt this."** Start small. The Boy Scout Rule — leave code cleaner than you found it — requires no team buy-in. Apply it to your own code. When others see the improvement, they'll ask what you're doing differently.
