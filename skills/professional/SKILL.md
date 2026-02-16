@@ -1,152 +1,300 @@
 ---
 name: professional
 description: >-
-  Guide professional software development practices - responsibility, ethics, estimates, saying no, commitments.
-  Activates when discussing professional conduct, estimation, commitments, ethics, saying no,
-  or when quality standards and professional responsibility are relevant.
+  Operational guide for professional software development practices — responsibility, ethics, estimates, saying no, commitments.
+  Activates when discussing professional conduct, estimation, commitments, ethics, saying no, or when quality standards and
+  professional responsibility are relevant.
+model: opus
 allowed-tools: Read, Grep, Glob
 argument-hint: [situation or code to evaluate]
+delegates-to: [tdd, agile, clean-code-review]
 ---
 
 # Professional Software Development
 
-Professional standards for software developers — responsibility, ethics, estimation, and the discipline required when society depends on our code.
-
-For detailed case studies (VW, Knight Capital, Toyota, estimation stories, industry history), read `references/extended-examples.md`.
+Operational protocol for professional responsibility in software development. Covers nine core commitments, decision rules for estimation and commitments, quality standards, knowledge ownership, and harm prevention.
 
 ---
 
-## The Programmer's Oath
+## Step 0: Detect Context
 
-Nine promises that define professional software development:
+Classify the professional situation you're evaluating:
 
-**1. I will not produce harmful code.** My code will do no harm to users, customers, or fellow programmers. I will know what my code does. I will know that my code works. Hiding behind requirements written by others is no excuse — it's my fingers on the keyboard.
-
-**2. The code I produce will always be my best work.** I will not knowingly allow code that is defective in behavior or structure to accumulate. Messy software is harmful software — the more tangled the code, the less certain you are about what it will do. Dead code must be removed. Quick patches cannot be left without doing harm.
-
-**3. I will produce quick, sure, repeatable proof that my code works.** This means TDD. With each release, every element of the code has proof that it works as it should. The three laws of TDD lock you into a cycle that is seconds long — write a failing test, make it pass, clean it up.
-
-**4. I will make frequent small releases** so that I do not impede the progress of others.
-
-**5. I will fearlessly and relentlessly improve my creations.** The first word of software is "soft" — it's supposed to be easy to change. If we didn't want it to be easy to change, we'd call it hardware. To the extent our software is hard to change, we have thwarted the very reason for its existence.
-
-**6. I will keep productivity high** — my own and the productivity of others. I will do nothing that decreases it.
-
-**7. I will ensure coverage.** Others can cover for me and I can cover for them. No single points of knowledge failure.
-
-**8. I will produce honest estimates** — honest in both magnitude and precision. I will not make promises without certainty.
-
-**9. I will never stop learning** and improving my craft.
+- **Estimation request** — Someone asking for time/effort estimates for a task or feature
+- **Commitment pressure** — Being asked to promise a delivery date or guarantee an outcome
+- **Quality shortcut** — Being asked to skip tests, skip review, rush code to production
+- **Ethics concern** — Code or decision that could harm users, society, system stability, or business
+- **Code ownership** — Code checked in; responsibility for quality, maintainability, and knowledge sharing
+- **Team dynamics** — Knowledge silos, single points of failure, need for coverage or knowledge sharing
+- **Pressure situation** — Manager, client, or business pressure to compromise on standards
 
 ---
 
-## Do No Harm
+## Step 1: Apply Relevant Professional Standards
 
-### Harm to Society
+Based on detected context from Step 0, apply the decision rules in Step 2. Each context maps to specific standards:
 
-The first rule: do no harm. The VW emissions scandal showed what happens when programmers write deceitful code — software that purposely thwarted EPA tests, causing cars to emit 20 times the safe amount of pollutants. The CEO blamed "just some software engineers," but those programmers wrote harmful code and should have refused.
-
-Every software developer who knows something is wrong and stays silent shares the blame. You were hired because you know when things are about to go wrong — that means you have the responsibility to speak up before something terrible happens.
-
-### Harm to Function
-
-You must know that your code works and will not harm. Knight Capital went bankrupt in 45 minutes because dead code left in a system was accidentally reactivated — a repurposed flag triggered an infinite loop of bad trades that lost $460 million. Toyota's unintended acceleration killed up to 89 people — their code had 10,000 global variables, and the programmers did not know their code would not kill.
-
-When the stakes are high, you have to drive your knowledge as close to perfection as you can. There's almost always much more at stake than you think.
-
-### Harm to Structure
-
-Anything that makes code hard to read, understand, change, or reuse is structural harm. SOLID principles prevent structural harm between modules. Clean architecture prevents harm at the highest level. Structure matters as much as behavior — sometimes more.
-
-### The Two Values of Software
-
-Consider two programs. Program A does everything correctly but is impossible to change. Program B does nothing correctly but is easy to change. Program B is more valuable — because requirements will change, and when they do, Program A becomes useless forever, while Program B can be made to work and will continue to work.
-
-This is why startups are not an exception. A startup is not an urgent situation that justifies messy code. The one thing that's certain about a startup is that you're producing the wrong product — no product survives contact with users. If you can't change it because you made a mess, you're doomed. The mess slows you down long before you reach the finish line.
+| Context | Primary Standards |
+|---------|------------------|
+| Estimation request | Honest Estimation, PERT formula, range not point |
+| Commitment pressure | Saying No, Honest Estimation, Quality Non-Negotiable |
+| Quality shortcut | Quality Non-Negotiable, Do No Harm, Best Work |
+| Ethics concern | Do No Harm (function, structure, society), Speak Up |
+| Code ownership | Best Work, Knowledge Sharing, Boy Scout Rule |
+| Team dynamics | Knowledge Sharing, Speak Up, Team Coverage |
+| Pressure situation | Professional No, Quality Shield, Speak Up Protocol |
 
 ---
 
-## Professional Responsibility
+## Step 2: Decision Rules (7 Core Standards)
 
-### Taking Ownership
+### Rule 1: Do No Harm
+**WHEN:** Any code change, any estimate, any commitment, any decision to ship.
+**Apply:** Verify that code does not harm users, customers, system function, system structure, or society. This is non-negotiable. It applies even when requirements are written by others — your fingers are on the keyboard.
 
-Professionalism is a badge of honor AND a marker of accountability. You can't take pride in something you can't be held accountable for. When a non-professional makes a mess, their employer cleans it up. When a professional makes a mess, the professional cleans it up.
-
-### Saying "No"
-
-You were hired for your ability to say no. Any idiot can say yes, but it takes real skill to say no at the right times. By doing so, you can save your company untold amounts of money and effort. If you're asked to commit and you can't, say no and describe your uncertainty. Be willing to discuss options and hunt for a way to say yes — but don't be afraid to say no.
-
-### Saying "Yes"
-
-When you say yes to a commitment, you set up a long domino chain of potential failure. You are the one they're counting on. Think long and hard about whether it's actually possible before committing.
-
-### The Danger of "Try"
-
-When your boss asks you to "just try," the answer is no. You're already trying. There are no magic beans in your pocket to alter reality. Saying "yes, I'll try" is lying — you have no plan to change your behavior, no strategy to do anything different. You only said it to get them to leave you alone.
-
-### No Passive-Aggressive Behavior
-
-Every software developer who knows something is wrong — like when healthcare.gov was clearly not ready — and does nothing to stop the deployment shares part of the blame. You were hired because you know how to identify trouble before it happens. Speak up.
+**WHEN NOT:** Never skip. There are no contexts where harm is acceptable.
 
 ---
 
-## Estimation
+### Rule 2: Honest Estimation
+**WHEN:** Any estimation request. Someone asks "How long will this take?"
+**Apply:** Provide three estimates (PERT): Best Case (B), Normal Case (N), Worst Case (W). Calculate expected time as ((B + W)/2 + N) / 3. Present as a range with confidence, not a single point. Include fudge factor (2x–4x) to account for unknown unknowns.
 
-### Estimates vs. Commitments
-
-An estimate is NOT a commitment. If you give someone a date, you're giving a commitment, not an estimate. If you don't KNOW you can make a date, don't offer that date — offer a range instead. The most honest estimate you can give is "I don't know." The challenge is to quantify what you do know and what you don't.
-
-### Accuracy and Precision
-
-A good estimate is honest in both accuracy (the range of dates you feel confident in) and precision (how narrow that range is). "Sometime between now and ten years from now" is accurate but lacks precision. "Yesterday at 2:15 AM" is precise but not accurate if you haven't started. Estimates are probability distributions — they have a center point and a width.
-
-### PERT Estimation
-
-For each task, provide three estimates:
-
-- **Best Case (B):** Everything goes right — 1% chance of being this fast
-- **Normal Case (N):** Realistic estimate — 50% chance
-- **Worst Case (W):** Murphy's Law — 99% chance of being done by this time
-
-**Expected Time (mu):** ((B + W)/2 + N) / 3 — weighted average giving normal case weight of 2.
-**Standard Deviation (sigma):** (W - B) / 6.
-**Aggregating:** Sum expected times directly. For standard deviations, sum the squares then take the square root.
-
-### The Fudge Factor
-
-We're generally not good at identifying all subtasks — we might miss half. Compensate by multiplying by 2, 3, or even 4. Increasing precision on the fudge factor is expensive — the only way to truly know how long something takes is to do it. Put your estimation effort into a time box.
-
-### Handling Pressure
-
-Managers will ask you to reduce the fudge factor — that's fair, but communicate that increasing precision is expensive. Sometimes they'll try a different tactic: asking you to commit. They're trying to transfer risk that they should be managing onto you. Don't let them bully you into commitments you know you shouldn't make. They might say you're not being a team player — don't be fooled.
-
-Most estimates are lies because they're constructed backwards from a known end date. When Congress mandated the healthcare.gov launch date by law, nobody was asked to actually estimate anything — the programmers all referred to their project plan as "the laugh track."
+**WHEN NOT:** Trivial tasks where estimation is not needed (e.g., "copy this line"). Even then, err on the side of transparency.
 
 ---
 
-## TDD as Professional Standard
+### Rule 3: Saying No
+**WHEN:** Asked to commit to something you cannot deliver with confidence. Asked to skip tests, skip review, ship broken code, or make a promise without certainty.
+**Apply:** Say no. Explain the constraint. Offer alternatives. Be willing to discuss and hunt for ways to say yes — but don't be afraid to say no. Saying yes to an impossible commitment is lying.
 
-Is TDD a prerequisite to professionalism? It's becoming true. More and more developers believe TDD is part of a minimum set of disciplines that mark professional development. How can you prevent harm to function without tests that show it works? How can you prevent harm to structure without tests that let you clean it? How can you guarantee your test suite is complete unless you follow the three laws?
+**WHEN NOT:** When you genuinely can commit. When you have confidence in the estimate and delivery date.
 
 ---
 
-## The Coming Reckoning
+### Rule 4: Quality Non-Negotiable
+**WHEN:** Pressure to cut corners, skip tests, skip review, rush code to production, or ship known defects.
+**Apply:** Quality is not negotiable. The cost of discipline (TDD, review, refactoring) is always less than the cost of harm (defects, rework, downtime, loss of trust). Explain this tradeoff clearly.
 
-We rule the world. Other people think they rule it, but they give those rules to us and we write them into the machines that make everything work. Nothing happens in society unless software is mediating it.
+**WHEN NOT:** Never. Quality is always required.
 
-One day, some programmer will make a mistake and thousands of people will die. This isn't speculation — it's a matter of time. When it happens, politicians will point at us. Not at our managers, not at our companies — at us, because it was our fingers on the keyboards. If our answer is "well, our managers were really leaning on us hard" — that's not going to cut it.
+---
 
-The consequence: politicians will regulate our industry. They'll tell us what languages, frameworks, and processes to use. Regulated by people who don't understand software. It will be hell.
+### Rule 5: Best Work
+**WHEN:** Every check-in. Every release. Every piece of code goes to production under your name.
+**Apply:** Code represents your best work at this moment. Leave code better than you found it (Boy Scout Rule). Remove dead code. Fix quick patches. If a spike or prototype is thrown away, label it clearly as throwaway.
 
-We have one chance to avoid this: get there first. Decide what our profession is, what our ethics are, what our disciplines are, what our minimum standards are. Self-regulate, so that when governments step in, they just put the force of law behind what we're already doing. That's what doctors and lawyers did.
+**WHEN NOT:** Throwaway spike code (but mark it explicitly so it doesn't accidentally ship).
+
+---
+
+### Rule 6: Knowledge Sharing
+**WHEN:** Code ownership concern, critical system knowledge, risk of single point of failure.
+**Apply:** No single points of knowledge failure. Others can cover for you, you can cover for them. Ensure that at least two people understand critical code paths. Document, pair, review, teach.
+
+**WHEN NOT:** Temporary solo work on isolated prototype (but only temporary).
+
+---
+
+### Rule 7: Speak Up
+**WHEN:** You see something wrong — deployment risk, security issue, harmful code, quality concern, ethics violation.
+**Apply:** Speak up early, constructively, with evidence. Frame concerns as risks to deliver value, not as personal attacks. Escalate if ignored. You were hired because you know how to identify trouble before it happens.
+
+**WHEN NOT:** Stylistic preferences (those go through code review and team discussion, not emergency escalation).
+
+---
+
+## Step 3: Review Checklist — The Programmer's Oath
+
+Check each item. Mark severity: 🔴 (critical — must fix before shipping), 🟡 (warning — address this cycle), 🟢 (opportunity — address when convenient).
+
+1. 🔴 **Harm to users/society** — Does this code do harm? Could it harm anyone? Does it conceal truth or deceive?
+
+2. 🔴 **Undisclosed defects** — Are there known defects being shipped without disclosure? Is quality hiding harm?
+
+3. 🔴 **No proof of correctness** — Is there test coverage (PHPUnit, Jest)? Can you prove this code works as intended? Do the test suites pass?
+
+4. 🔴 **Commitment without confidence** — Was a date promised without real confidence? Does the estimate have evidence behind it (based on past velocity, story pointing)?
+
+5. 🟡 **Code worse than found** — Is code harder to read, change, or understand than before? Did you leave it worse?
+
+6. 🟡 **Point estimate as commitment** — Was an estimate presented as a date? Should it be a range instead?
+
+7. 🟡 **Knowledge silo** — Does only one person understand this code? Is there single-point-of-failure risk?
+
+8. 🟢 **Opportunity missed** — Could this code be made more expressive, more maintainable, more testable?
+
+9. 🟢 **Learning stagnated** — Did you learn something new? Did you grow your craft with this work?
+
+---
+
+## Step 4: Response Patterns (5 Named Responses)
+
+Use these patterns to respond to professional situations:
+
+### Pattern 1: The Honest Estimate
+
+**Situation:** "How long will this take?"
+
+**Response:**
+1. Break the work into small tasks
+2. For each task, estimate three points: Best (B), Normal (N), Worst (W)
+3. Calculate: Expected time = ((B + W)/2 + N) / 3
+4. Sum across all tasks
+5. Apply fudge factor (multiply by 2–4 for unknown unknowns)
+6. Present as a range: "Between X and Y, most likely Z"
+7. Communicate the uncertainty level: "High confidence" or "Moderate confidence" or "Low confidence"
+
+**Do NOT:**
+- Present a single point as if it's certain
+- Reverse-engineer estimates from a known deadline
+- Leave out the fudge factor
+- Skip communicating uncertainty
+
+---
+
+### Pattern 2: The Professional No
+
+**Situation:** Pressure to commit to something impossible.
+
+**Response:**
+1. Acknowledge the request and its business importance
+2. Explain why you cannot commit: "I don't have confidence I can deliver by [date] because [specific reason]"
+3. Offer alternatives:
+   - A later date you can commit to with confidence
+   - A reduced scope you can deliver on the requested date
+   - A range instead of a point date
+4. Propose next steps: "Here's what I can do: [option A] or [option B]"
+
+**Do NOT:**
+- Say "yes" to an impossible commitment
+- Say "I'll try" (it's a lie — you're already trying)
+- Be passive-aggressive (deploy broken code as a protest)
+- Apologize for being professional
+
+---
+
+### Pattern 3: The Quality Shield
+
+**Situation:** "Just skip the tests and ship it" or "We need to cut corners to hit the deadline."
+
+**Response:**
+1. Acknowledge the deadline pressure and business need
+2. Explain the tradeoff clearly with language-specific evidence:
+   - "Skipping PHPUnit/Jest tests saves us X hours now"
+   - "But defects in production will cost us [hours of rework + downtime + reputation damage + potential harm]"
+   - "Our test suite gives us confidence in changes"
+3. Show the math: Cost of discipline (running tests) << Cost of harm (production bugs)
+4. Offer alternatives to speed delivery:
+   - Reduce scope instead of quality (remove features, keep tests)
+   - Deploy early and iterate (but PHPUnit/Jest tests must pass on each release)
+   - Add resources to work in parallel (larger team can test faster)
+   - Run tests in parallel (speed up feedback loop)
+5. Make the call clear: "The answer is no to cutting quality. Here's how we deliver on time anyway."
+
+**Do NOT:**
+- Compromise on test suite (PHPUnit for PHP, Jest for TypeScript) or proof of correctness
+- Frame quality as optional or nice-to-have
+- Skip the math on cost of defects
+- Skip deployment validation (`npm run build`, type checking)
+
+---
+
+### Pattern 4: The Speak Up Protocol
+
+**Situation:** You see a risk, ethics concern, or quality problem.
+
+**Response:**
+1. **Gather evidence** — Get specifics: what could go wrong, what's the impact, what's the risk level
+2. **Frame constructively** — "I see a risk to [outcome we care about]: [specific risk]. Here's why it matters: [impact]. I suggest: [alternative approach]"
+3. **Escalate appropriately**:
+   - First: Tell the person directly (your teammate, code reviewer)
+   - Second: Escalate to lead/manager if not addressed
+   - Third: Escalate to senior leadership if still not addressed
+4. **Document** — If ignored, document your concern (email, ticket comment, meeting notes)
+5. **Own the outcome** — You did your part by speaking up. The decision becomes a team decision once escalated.
+
+**Do NOT:**
+- Stay silent when you know something is wrong
+- Frame concerns as personal attacks
+- Escalate stylistic preferences as emergencies
+- Give up after one attempt to communicate
+
+---
+
+### Pattern 5: The Boy Scout Commit
+
+**Situation:** Every check-in, every PR, every piece of code.
+
+**Response:**
+1. **Before shipping:** Run the quality checklist (Step 3)
+2. **Leave code better:**
+   - Remove dead code
+   - Fix naming issues you see
+   - Extract a function if one is too long
+   - Add a test for an untested path
+3. **Don't accumulate mess:** If you see a quick patch, clean it up now or add a ticket to clean it later (and do it)
+4. **Document knowledge:** If you're the only one who understands something, document it or pair with someone
+5. **Verify tests pass:** Don't commit failing tests
+
+**Do NOT:**
+- Leave code worse than you found it
+- Accumulate technical debt by ignoring quick wins
+- Create knowledge silos
+- Ship code with failures
+
+---
+
+## When NOT to Apply This Skill
+
+This skill is always relevant when:
+- Discussing estimation, commitments, deadlines
+- Evaluating code quality or professional standards
+- Considering whether to ship or deploy
+- Facing pressure to compromise on quality or ethics
+- Making decisions about code ownership or knowledge sharing
+
+This skill is **not relevant** when:
+- Discussing pure technical architecture (use `/architecture`)
+- Debugging a specific code defect (use language-specific tools)
+- Refactoring for style (use `/naming` or `/functions`)
+- Learning a new technology (use `/teach-concept`)
+
+---
+
+## K-Line History
+
+This skill encodes the accumulated knowledge of:
+
+- **The Programmer's Oath** — Uncle Bob Martin's nine commitments (Clean Coder)
+- **Do No Harm Framework** — Preventing harm to users, function, structure, and society
+- **Two Values of Software** — Behavior and structure; structure enables change
+- **PERT Estimation** — Beta distribution for three-point estimates
+- **Professional Responsibility** — Ownership, saying no, saying yes, the danger of "try"
+- **Quality as Risk Management** — Cost of discipline vs cost of harm
+- **The Coming Reckoning** — Self-regulation before external regulation
+
+---
+
+## Communication Style
+
+When applying this skill:
+
+- **Be direct** — Use clear language: "This is a critical risk because..." not "It might be..."
+- **Use evidence** — Point to specific defects, specific risks, specific harms
+- **Respect business context** — Acknowledge deadline pressure and business needs
+- **Offer alternatives** — Don't just say no; say no and offer a path forward
+- **Calm and professional** — Never passive-aggressive, never "I told you so"
+- **Document decisions** — When you escalate, document your recommendation and the decision
+- **Own your part** — You control your code quality, your estimates, your willingness to speak up
 
 ---
 
 ## Related Skills
 
-- **/tdd** — Quick, sure, repeatable proof that code works
-- **/agile** — Professional expectations Agile demands of teams
+- **/tdd** — Proof of correctness; TDD as professional standard
+- **/agile** — Professional expectations that Agile teams demand
+- **/clean-code-review** — Quality gate before shipping; harm verification
 - **/solid** — Preventing structural harm between modules
-- **/architecture** — Preventing harm at the highest level
-- **/clean-code-review** — Quality verification before shipping
-- **/legacy-code** — Professional responsibility toward existing code
+- **/architecture** — Preventing harm at the highest level; system design
+- **/legacy-code** — Professional responsibility toward existing code; characterization tests

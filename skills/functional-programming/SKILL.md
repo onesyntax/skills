@@ -1,511 +1,482 @@
 ---
 name: functional-programming
 description: >-
-  Guide applying functional programming principles from Uncle Bob's teachings. Activate
-  when working with pure functions, immutability, higher-order functions, functional
-  composition, or when the user mentions FP, pure functions, immutability, map/filter/reduce,
-  side effects, or functional architecture. FP is the oldest paradigm and the key to
-  safe concurrency — it eliminates shared mutable state by design.
+  Apply functional programming principles to improve code quality. Activate when
+  reviewing code with pure functions, immutability, state management, higher-order
+  functions, functional composition, or when the user mentions FP, pure functions,
+  immutability, map/filter/reduce, side effects, or functional architecture.
+model: opus
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob
+delegates-to:
+  - solid
+  - architecture
 argument-hint: [code or module to analyze]
 ---
 
-# Functional Programming Skill
+# Functional Programming Skill — Operational Procedure
 
-Functional programming is the discipline of building software through pure functions, immutable data, and function composition. It is not a new fad — lambda calculus (Alonzo Church, 1936) predates the Turing machine. FP is the oldest computational paradigm, yet it solves the most modern problem: safe concurrency.
+## Step 0: Detect Context
 
-For category theory foundations (categories, monoids, functors), extended architecture examples, read `references/extended-examples.md`.
+Before applying any FP guidance, detect the project's stack and FP support level:
 
-**OO and FP are NOT mutually exclusive. They are COMPLEMENTARY.** OO manages dependencies between modules (through polymorphism and dependency inversion). FP manages state and side effects (through immutability and pure functions). Both are needed for well-designed systems.
-
----
-
-## Core Philosophy
-
-### The Data Flow Model
-
-**Procedural thinking:** Control flow — sequences of instructions, jumps, branches, loops. You think about WHAT THE COMPUTER DOES step by step.
-
-**Functional thinking:** Data flow — data enters a pipeline of transformations, each function takes input and produces output. You think about WHAT THE DATA BECOMES.
-
-```
-Input --> [Transform A] --> [Transform B] --> [Transform C] --> Output
-```
-
-No variables are mutated along the way. Each transformation creates new data from old data.
-
-### Why FP Matters Now: Concurrency
-
-Hardware stopped getting faster per core around 2005. Instead, it adds MORE cores. Software must exploit multiple cores. Shared mutable state is the root cause of concurrency bugs — race conditions, deadlocks, concurrent update problems, non-deterministic behavior.
-
-FP eliminates this entire class of bugs by design. No variables changing state means no race conditions. No race conditions means no deadlocks, no concurrent update problems.
+1. **Language detection:**
+   - Check file extensions: `*.php`, `*.ts`, `*.tsx`, etc.
+   - Read a representative file to identify functional support level
+2. **FP support classification:**
+   - **PHP:** FP supported through discipline, arrays, immutable libraries
+   - **TypeScript:** FP supported through libraries and discipline, no enforcement
+3. **Ecosystem detection:**
+   - Check for FP libraries: Immutable.php, fp-ts, Ramda, lodash/fp
+   - Check for state management: Reducer patterns, custom immutable implementations
+   - Read composer.json / package.json to understand available tools
+4. **Codebase FP maturity:**
+   - Scan existing code: are functions pure? is mutation present? do pipelines exist?
+   - Grep for mutation patterns: assignment, array mutations, state modifications
+   - Identify current side effect boundaries
 
 ---
 
-## Pure Functions and Referential Transparency
+## Step 1: Generate Context-Specific Rules
 
-### What Makes a Function Pure
+Based on detected language and FP support level, adapt principles to concrete rules:
 
-A pure function has two properties:
+| Language | Purity | Immutability | Pipeline | HO-Functions | State |
+|----------|--------|-------------|----------|------------|-------|
+| **PHP** | Discipline-based | readonly properties (8.1+), value objects | array_map/array_filter chains | array_map/array_filter | Manual/Immutable DTOs |
+| **TypeScript** | Discipline-based | Object.freeze, const, Immer | Array methods, pipe | .map/.filter/.reduce | Reducer pattern, custom immutable |
 
-1. **Given the same inputs, it always returns the same output** — no dependence on external state
-2. **It produces no side effects** — no modification of external state
-
-```
-// PURE: Same input always gives same output, no side effects
-add(a, b): return a + b
-
-// IMPURE: Depends on and modifies external state
-addToCounter(a):
-    counter += a         // Modifies external state!
-    return counter       // Return value depends on external state!
-```
-
-### Referential Transparency
-
-Referential transparency means you can replace any name with its value without changing the program's behavior. Every name binding is simply a shorthand for a value. When a function modifies a global variable, it breaks referential transparency — the name no longer stands for a fixed value but for "whatever this happens to be right now."
-
-### Side Effects: Harmful vs Beneficial
-
-**Harmful:** Those that mutate state affecting future computations — modifying a global variable, changing a shared data structure, writing to a file other functions read. These create hidden temporal dependencies.
-
-**Beneficial:** Output — displaying results, writing a network response, printing a report. These are the REASON the program exists.
-
-The goal is not to eliminate ALL side effects (that makes programs useless). The goal is to **isolate** side effects at the boundaries and keep the core logic pure. This is the "functional core, imperative shell" pattern.
-
-### Hidden Dependencies
-
-```
-// DANGEROUS: Hidden dependency through global state
-totalPrice = 0
-
-addItem(item):
-    totalPrice += item.price       // Hidden mutation
-
-applyDiscount(rate):
-    totalPrice *= (1 - rate)       // Depends on addItem being called first!
-```
-
-Call order matters but nothing makes this explicit. In FP, dependencies are explicit through function arguments:
-
-```
-// SAFE: Dependencies are explicit
-addItem(currentTotal, item): return currentTotal + item.price
-applyDiscount(total, rate): return total * (1 - rate)
-```
+All subsequent FP advice MUST use the detected language's idioms, available libraries, and performance characteristics.
 
 ---
 
-## Immutability and State Management
+## Step 2: Apply Decision Rules
 
-### No Assignment Statements
+### Rule 1: Purity — Pure Business Logic
 
-In pure FP, variables are bound once and never reassigned:
+- **WHEN to apply:** Any function computing a result from inputs that could theoretically be memoized
+- **WHEN NOT:** I/O boundary functions (database reads, HTTP calls, file reads), system interaction (time, random, logging)
+- **Decision test:** Cover the function body. Are the only inputs the parameters? Is the only output the return value? No reads from mutable global state? No writes to files, databases, or fields? YES → must be pure.
+- **Severity:** 🔴 RED — impure core logic mixing business rules with I/O creates non-deterministic, untestable, unmemoizable code
+- **Verification:** For each statement in the function, ask: "Does this read from or write to anything other than parameters/return value?" If yes, move that I/O outside.
 
-```
-circle = {radius: 5, color: "red"}
-biggerCircle = circle.with(radius: 10)
-// circle is unchanged! biggerCircle is a new map
-```
+### Rule 2: Immutability — Persistent Data Structures
 
-Need "new" state? Create a new data structure derived from the old one. The old data structure remains unchanged.
+- **WHEN to apply:** Data structures passed between functions, function arguments, module state
+- **WHEN NOT:** Performance-critical tight loops where allocation overhead dominates, local stack variables with obvious short scope (< 5 lines)
+- **Decision test:** Does this variable's value change after binding? YES → should it? Can you instead create a new binding? Always prefer new bindings over reassignment.
+- **Severity:** 🔴 RED — shared mutable data is the root cause of all concurrency bugs (race conditions, deadlocks)
+- **Verification:** Grep for reassignment patterns (`var x = ...` then `x = ...`). Each reassignment is a mutation opportunity. Replace with `val`/`const`/`let`-only bindings.
 
-### Persistent Data Structures
+### Rule 3: Side Effect Isolation (Functional Core, Imperative Shell)
 
-FP uses **persistent data structures** that preserve previous versions through structural sharing:
+- **WHEN to apply:** Any function mixing business logic (pure computation) with side effects (I/O, time, randomness)
+- **WHEN NOT:** Trivial single-purpose I/O functions (just a database call with no logic), middleware frameworks that mandate mixing (some web frameworks require this — extract and test the pure part separately)
+- **Decision test:** Can you describe the function's purpose in one sentence without using the words "call", "read", "write", "send", "fetch"? If no, it has hidden business logic — extract it.
+- **Severity:** 🔴 RED — mixing breaks testability, reproducibility, and composability
+- **Verification:**
+  - Identify side effects: I/O, time access, randomness, global/field mutation
+  - Extract logic that uses only those effects: move to a parameter (dependency injection)
+  - Remaining function should be 100% pure
+  - Example: `processOrder(order)` calls DB inside → extract to `processOrder(order, getInventory, chargePayment)` where those are pure simulators or injected functions
 
-```
-Original list:  [A] -> [B] -> [C] -> [D]
+### Rule 4: Pipeline Composition — Sequential Transformations
 
-"Add" E to front:
-New list:       [E] -> [A] -> [B] -> [C] -> [D]
-Original list:         [A] -> [B] -> [C] -> [D]  (unchanged, shared)
-```
+- **WHEN to apply:** Multiple sequential transformations on data (parse → validate → transform → aggregate)
+- **WHEN NOT:** Early-exit control flow where intermediate results short-circuit processing, complex stateful iteration, exception-based control flow
+- **Decision test:** Can you describe the data flow as a sequence of transformations? Does each intermediate result contribute to the final output without side effects? YES → use pipeline.
+- **Severity:** 🟡 YELLOW — missing opportunities reduce readability and make future transformations harder to add
+- **Verification:**
+  - Identify all intermediate values
+  - Check if they flow left-to-right or branch
+  - Rewrite using language pipeline operator: `data |> transform1 |> transform2 |> transform3` or `data.map().filter().reduce()`
+  - Result should read like a description, not a procedure
 
-Not copying — structural sharing. The "new" list reuses the old list's memory. This makes immutability practical even for large data structures.
+### Rule 5: Higher-Order Functions over Loops
 
-### The Update-Draw Loop
+- **WHEN to apply:** For-loops iterating a collection into a new result (map pattern), filtering to a subset (filter), or accumulating a value (reduce)
+- **WHEN NOT:** Complex stateful iteration (zip two lists with interleaved reads), performance-critical tight loops where allocation overhead matters (but benchmark first!), early-exit patterns where break/return is essential to correctness
+- **Decision test:** What is the loop doing? Transforming each element → map. Keeping some elements → filter. Combining into one value → reduce. If one of these, use HO-function.
+- **Severity:** 🟡 YELLOW — for-loops are harder to understand and more error-prone than their HO-function equivalents
+- **Verification:**
+  - Identify loop body pattern: does it read `result.push(f(item))`? Replace with `map(f, items)`
+  - Does it read `if (predicate(item)) result.push(item)`? Replace with `filter(predicate, items)`
+  - Does it accumulate with `acc = op(acc, item)`? Replace with `reduce(op, init, items)`
 
-For interactive applications without mutable state:
+### Rule 6: Referential Transparency — Functions as Values
 
-```
-1. Setup: Create initial state (a map/dictionary)
-2. Update: Take current state + events, produce NEW state (pure function)
-3. Draw: Render the new state (side effect, isolated)
-4. New state passed back to update, cycle repeats
-```
-
-```
-setup():
-    return {x: 100, y: 100, dx: 2, dy: 3, score: 0}
-
-updateState(state, events):          // PURE — business logic
-    newState = state
-    for event in events:
-        newState = applyEvent(newState, event)
-    return checkBoundaries(newState)
-
-draw(state):                          // SIDE EFFECT — presentation
-    clearScreen()
-    drawPlayer(state.x, state.y)
-    drawScore(state.score)
-```
-
-Update is trivially testable (pure). Draw is tested by visual inspection. Business logic and presentation are cleanly separated — SRP at the architectural level.
-
-### Atoms for Controlled Mutation
-
-When shared mutable state is absolutely necessary (communicating between threads), use **atoms** — controlled, disciplined mutation with atomic Compare-And-Swap:
-
-```
-counter = atom(0)
-
-read(counter)           // => 0
-swap(counter, inc)      // atomically: counter is now 1
-swap(counter, add, 10)  // atomically: counter is now 11
-```
-
-If two threads swap simultaneously, one retries automatically. Atoms make mutation explicit, visible, and safe.
+- **WHEN to apply:** Any function that could benefit from memoization (same inputs → same output guaranteed), or that is passed as an argument to higher-order functions
+- **WHEN NOT:** Functions intentionally non-deterministic (random, timestamps, UUIDs), functions depending on external state that changes intentionally
+- **Decision test:** Is this function pure (Rule 1)? Can I safely cache its result? Can I pass it as an argument without losing correctness? YES → referentially transparent.
+- **Severity:** 🟢 GREEN — enables optimization, composition, testing, reasoning
+- **Verification:** If the function is pure (Rule 1), it's automatically referentially transparent. Use this to enable memoization and function composition without fear of hidden state changes.
 
 ---
 
-## Higher-Order Functions: Map, Filter, Reduce
+## Step 3: Review Checklist
 
-### Map
+Run against every function/data structure in scope. Each item has a severity and verification test.
 
-Apply a function to each element, return a new collection:
-
-```
-map(inc, [1, 2, 3, 4, 5])           // => [2, 3, 4, 5, 6]
-map(square, [1, 2, 3, 4, 5])        // => [1, 4, 9, 16, 25]
-
-// Replaces:
-results = []
-for n in numbers:
-    results.add(n * n)
-// With:
-results = map(square, numbers)
-```
-
-### Filter
-
-Keep elements where a predicate is true:
-
-```
-filter(isEven, [1, 2, 3, 4, 5, 6])       // => [2, 4, 6]
-filter(greaterThan(3), [1, 2, 3, 4, 5])   // => [4, 5]
-```
-
-### Reduce (Fold)
-
-Accumulate a result by applying a binary function repeatedly:
-
-```
-reduce(add, 0, [1, 2, 3, 4, 5])     // => 15
-// Steps: add(0,1)=1, add(1,2)=3, add(3,3)=6, add(6,4)=10, add(10,5)=15
-```
-
-Reduce is the most general — you can implement map and filter in terms of reduce.
-
-### Composing Pipelines
-
-Real-world functional code chains these operations:
-
-```
-// "Sum salaries of active employees earning over 50k"
-employees
-    |> filter(e -> e.status == ACTIVE)
-    |> map(e -> e.salary)
-    |> filter(s -> s > 50000)
-    |> reduce(add, 0)
-```
-
-Each step is a pure transformation. The pipeline reads like a description of what you want, not how to get it.
+| # | Check | Look For | Severity | Verification |
+|---|-------|----------|----------|-------------|
+| 1 | Impure core logic | Business calculation depends on global state, I/O, or current time | 🔴 Red flag | Extract pure parameters from side effects; inject as function args |
+| 2 | Hidden mutation | Function modifies input arguments or module fields | 🔴 Red flag | Trace all mutations; replace with new bindings |
+| 3 | Shared mutable state | Multiple functions read/write same variable; concurrent access possible | 🔴 Red flag | Use immutable data structures or atoms with explicit synchronization |
+| 4 | Side effects scattered | I/O interspersed with pure logic (e.g., DB call inside calculation) | 🔴 Red flag | Extract I/O to function arguments; move to boundaries |
+| 5 | Imperative loop (map pattern) | for-loop with result.push(f(item)) | 🟡 Yellow | Replace with map(f, items) or language equivalent |
+| 6 | Imperative loop (filter pattern) | for-loop with if(predicate(item)) result.push(item) | 🟡 Yellow | Replace with filter(predicate, items) |
+| 7 | Imperative loop (reduce pattern) | for-loop accumulating: acc = op(acc, item) | 🟡 Yellow | Replace with reduce(op, init, items) |
+| 8 | Missing immutability | Data structure reassigned after binding; mutable collection passed between functions | 🟡 Yellow | Use const/val bindings; pass frozen copies |
+| 9 | Composition opportunity | Sequential function calls that could be piped | 🟢 Opportunity | Chain with pipeline operator or compose function |
+| 10 | Partial application candidate | Same function called repeatedly with fixed first N arguments | 🟢 Opportunity | Extract to named function or use partial application |
 
 ---
 
-## Sequence, Selection, Iteration in FP
+## Step 4: Refactoring Patterns
 
-### Sequence
+For each pattern: identify the problem in the PROJECT'S language, show before/after using the project's actual syntax.
 
-Achieved through **dependent function calls** — function B depends on function A's output:
+### Pattern: Extract Functional Core (impure → separated)
 
-```
-rawData   = readInput()
-parsed    = parse(rawData)
-validated = validate(parsed)
-result    = process(validated)
-```
+**Problem:** Business logic mixed with I/O — function is untestable, non-deterministic, unoptimizable.
 
-### Selection
-
-If/cond expressions **return values** rather than jumping to code blocks:
-
-```
-status = cond:
-    score > 90: "excellent"
-    score > 70: "good"
-    score > 50: "average"
-    else:       "poor"
-```
-
-Selection is an expression, not a statement. It produces a value that flows into the next transformation.
-
-### Iteration
-
-FP has **no loops**. Iteration is achieved through **recursion** or higher-order functions:
-
-```
-// Recursive factorial
-factorial(n):
-    if n <= 1: return 1
-    return n * factorial(n - 1)
-
-// Tail-recursive (compiler reuses stack frame)
-factorial(n):
-    loop(i = n, acc = 1):
-        if i <= 1: return acc
-        recur(i - 1, acc * i)
-```
-
-In practice, most iteration uses map/filter/reduce. Explicit recursion is reserved for cases where higher-order functions don't fit.
-
----
-
-## Functional SOLID Principles
-
-### SRP in FP
-
-Separate business logic (pure functions) from presentation (side-effecting functions). The Update-Draw Loop is SRP at the architectural level. Each function serves one actor.
-
-### OCP in FP
-
-Three dispatch mechanisms, from worst to best:
-
-**1. Switch dispatch** — adding a new type requires modifying existing code (violates OCP):
-
-```
-area(shape):
-    switch shape.type:
-        CIRCLE: return PI * shape.radius^2
-        RECTANGLE: return shape.width * shape.height
-    // Adding TRIANGLE requires modifying this function
-```
-
-**2. Dictionary dispatch** — extend without modifying:
-
-```
-areaFns = {
-    CIRCLE: (s) -> PI * s.radius^2,
-    RECTANGLE: (s) -> s.width * s.height
+**Before (PHP):**
+```php
+public function processOrder(int $orderId): array
+{
+    $order = $this->orderRepository->findById($orderId);  // I/O
+    $total = array_sum(array_map(fn($item) => $item['price'], $order['items'])); // Logic
+    $tax = $total * 0.1;                      // Logic
+    $finalPrice = $total + $tax;              // Logic
+    $this->paymentService->charge($finalPrice); // I/O
+    $this->orderRepository->update($orderId, ['status' => 'paid']); // I/O
+    return ['orderId' => $orderId, 'finalPrice' => $finalPrice, 'status' => 'paid'];
 }
-area(shape): return areaFns[shape.type](shape)
-
-// Extend without modifying existing code:
-areaFns[TRIANGLE] = (s) -> 0.5 * s.base * s.height
 ```
 
-**3. Protocol dispatch (BEST)** — new types implement existing protocols:
+**After (PHP):**
+```php
+// Pure core — testable, deterministic, composable
+function calculateTotal(array $items): float
+{
+    return array_sum(array_map(fn($item) => $item['price'], $items));
+}
 
-```
-protocol Shape:
-    area()
-    perimeter()
+function calculateFinalPrice(float $total): float
+{
+    return $total + ($total * 0.1);
+}
 
-record Circle(radius) implements Shape:
-    area(): return PI * radius^2
-    perimeter(): return 2 * PI * radius
-
-// Adding Triangle requires NO modification of existing code
-record Triangle(base, height, sideA, sideB) implements Shape:
-    area(): return 0.5 * base * height
-    perimeter(): return base + sideA + sideB
-```
-
-### LSP in FP
-
-MORE important in dynamic languages because there's no compiler safety net. Every protocol implementation MUST implement all methods meaningfully. A Triangle that throws "not implemented" for `perimeter` is an LSP violation.
-
-### ISP in FP
-
-Split fat protocols into focused ones:
-
-```
-// FAT — violates ISP
-protocol Shape: area(), perimeter(), draw(canvas), serialize(format)
-
-// SEGREGATED
-protocol Measurable: area(), perimeter()
-protocol Drawable:   draw(canvas)
-protocol Serializable: serialize(format)
+// Imperative shell — at boundary (Service)
+public function processOrder(int $orderId): array
+{
+    $order = $this->orderRepository->findById($orderId);
+    $total = calculateTotal($order['items']);
+    $finalPrice = calculateFinalPrice($total);
+    $this->paymentService->charge($finalPrice);
+    $this->orderRepository->update($orderId, ['status' => 'paid']);
+    return ['orderId' => $orderId, 'finalPrice' => $finalPrice, 'status' => 'paid'];
+}
 ```
 
-### DIP in FP
+**Steps:**
+1. Identify all I/O operations in the function (grep for: `::`, `->`, `DB::`, `Model::`)
+2. Extract pure logic into separate functions that take values as parameters
+3. Inject I/O as function parameters (dependency injection)
+4. Move I/O calls to a boundary function that orchestrates (the "imperative shell")
+5. Test pure functions directly; test shell with mock injections
 
-Achieved through protocols — high-level logic depends on protocol abstractions, not concrete implementations:
+### Pattern: Replace Loop with Pipeline (imperative → declarative)
 
+**Problem:** For-loop harder to understand than transformation chain; more error-prone (off-by-one bugs, accumulator mistakes).
+
+**Before (PHP):**
+```php
+function getActiveEmployeeNames(array $employees): array
+{
+    $result = [];
+    foreach ($employees as $employee) {
+        if ($employee['status'] === 'ACTIVE') {
+            $result[] = strtoupper($employee['name']);
+        }
+    }
+    return $result;
+}
 ```
-protocol PaymentGateway:
-    charge(amount)
-    refund(transactionId)
 
-// High-level business logic depends on abstraction
-processOrder(gateway: PaymentGateway, order):
-    total = calculateTotal(order)
-    gateway.charge(total)
-
-// Low-level detail implements protocol
-record StripeGateway(apiKey) implements PaymentGateway:
-    charge(amount): stripe.charge(apiKey, amount)
+**After (PHP):**
+```php
+function getActiveEmployeeNames(array $employees): array
+{
+    return array_map(
+        fn($e) => strtoupper($e['name']),
+        array_filter($employees, fn($e) => $e['status'] === 'ACTIVE')
+    );
+}
 ```
+
+**Or in TypeScript:**
+```typescript
+const activeNames = employees
+    .filter(e => e.status === 'ACTIVE')
+    .map(e => e.name.toUpperCase());
+```
+
+**Steps:**
+1. Identify loop pattern: transformation (map), filtering (filter), or reduction (reduce)
+2. Replace with language's native HO-function or comprehension
+3. Verify output matches original
+4. If multiple transformations, chain them (pipeline)
+5. Read the result aloud — should sound like a description, not an instruction
+
+### Pattern: Introduce Immutable Data (mutable → persistent)
+
+**Problem:** Mutable data structure passed between functions; hard to reason about state; concurrency-unsafe.
+
+**Before (PHP):**
+```php
+$order = ['items' => [], 'total' => 0];
+
+function addItem(&$order, $item) {
+    $order['items'][] = $item;      // Mutates!
+    $order['total'] += $item['price'];  // Mutates!
+}
+
+function applyDiscount(&$order, $rate) {
+    $order['total'] *= (1 - $rate);  // Mutates!
+}
+```
+
+**After (Immutable pattern):**
+```php
+class Order {
+    public readonly array $items;
+    public readonly float $total;
+
+    public function __construct(array $items = [], float $total = 0) {
+        $this->items = $items;
+        $this->total = $total;
+    }
+}
+
+function addItem(Order $currentOrder, array $item): Order {
+    return new Order(
+        [...$currentOrder->items, $item],
+        $currentOrder->total + $item['price']
+    );
+}
+
+function applyDiscount(Order $currentOrder, float $rate): Order {
+    return new Order(
+        $currentOrder->items,
+        $currentOrder->total * (1 - $rate)
+    );
+}
+
+// Usage: each call returns a new order
+$order = new Order();
+$order = addItem($order, ['name' => 'Widget', 'price' => 10]);
+$order = applyDiscount($order, 0.1);
+```
+
+**Or in TypeScript:**
+```typescript
+function addItem(currentOrder: Order, item: Item): Order {
+    return {
+        ...currentOrder,
+        items: [...currentOrder.items, item],
+        total: currentOrder.total + item.price
+    };
+}
+```
+
+**Steps:**
+1. Identify all mutation points: reassignment, field mutation, array/object methods that mutate (`push`, `pop`, `splice`, `sort`, `reverse`, `shift`, assignment to field)
+2. Replace with copy-and-transform: use spread operator, immutable.js, or language equivalent
+3. Change all callers to accept the new state and return it (or use reducer pattern)
+4. If many mutations: consider a `Reducer` function instead
+5. Test: old state should be unchanged after operation
+
+### Pattern: Compose Functions (sequential calls → pipeline)
+
+**Problem:** Multiple sequential function calls not composed; harder to add intermediate steps; less reusable.
+
+**Before (PHP):**
+```php
+function processUser(int $userId): User {
+  $user = $this->userRepository->find($userId);
+  $user = validateUser($user);
+  $user = enrichWithDefaults($user);
+  return $this->userRepository->save($user);
+}
+```
+
+**After (with composition):**
+```php
+function pipe(mixed $value, callable ...$fns): mixed {
+    return array_reduce(
+        $fns,
+        fn ($v, $fn) => $fn($v),
+        $value
+    );
+}
+
+function processUser(int $userId): User {
+    return pipe(
+        $userId,
+        fn ($id) => $this->userRepository->find($id),
+        fn ($user) => validateUser($user),
+        fn ($user) => enrichWithDefaults($user),
+        fn ($user) => $this->userRepository->save($user)
+    );
+}
+```
+
+**Or in TypeScript:**
+```typescript
+const pipe = (...fns: Array<(x: any) => any>) => (x: any) =>
+    fns.reduce((v, f) => f(v), x);
+
+const processUser = pipe(
+    (id: number) => fetchUser(id),
+    (user) => validateUser(user),
+    (user) => enrichWithDefaults(user),
+    (user) => save(user)
+);
+```
+
+**Steps:**
+1. Identify all intermediate values in a sequence
+2. Extract each step to a named function (if not already)
+3. Use `compose()` or `pipe()` to chain them (pipe is left-to-right, easier to read)
+4. If composition isn't available, write it: `pipe = (...fns) => x => fns.reduce((v, f) => f(v), x)`
+5. Test: composed function should match sequential version
+
+### Pattern: Isolate Side Effects (scattered → boundaries)
+
+**Problem:** Side effects (time, randomness, I/O) interspersed with pure logic; code is non-deterministic and hard to test.
+
+**Before (PHP):**
+```php
+function generateUniqueToken(string $prefix): string
+{
+    $timestamp = time();              // Side effect: time
+    $randomPart = random_int(1, 1000);  // Side effect: randomness
+    $token = "{$prefix}-{$timestamp}-{$randomPart}";
+    DB::table('tokens')->insert(['token' => $token]);  // Side effect: I/O
+    return $token;
+}
+```
+
+**After (PHP):**
+```php
+// Pure core
+function generateToken(string $prefix, int $timestamp, int $randomPart): string
+{
+    return "{$prefix}-{$timestamp}-{$randomPart}";
+}
+
+// Side effects at boundary
+function generateAndStoreToken(
+    string $prefix,
+    callable $getTime,
+    callable $getRandom,
+    callable $save
+): string {
+    $timestamp = $getTime();
+    $randomPart = $getRandom();
+    $token = generateToken($prefix, $timestamp, $randomPart);
+    $save($token);
+    return $token;
+}
+
+// In boundary (Controller/Service):
+$result = generateAndStoreToken(
+    "user",
+    fn () => time(),
+    fn () => random_int(1, 1000),
+    fn ($token) => DB::table('tokens')->insert(['token' => $token])
+);
+```
+
+**Or in TypeScript:**
+```typescript
+// Pure core
+function generateToken(prefix: string, timestamp: number, randomPart: number): string {
+    return `${prefix}-${timestamp}-${randomPart}`;
+}
+
+// Side effects at boundary
+function generateAndStoreToken(
+    prefix: string,
+    getTime: () => number,
+    getRandom: () => number,
+    save: (token: string) => void
+): string {
+    const timestamp = getTime();
+    const randomPart = getRandom();
+    const token = generateToken(prefix, timestamp, randomPart);
+    save(token);
+    return token;
+}
+```
+
+**Steps:**
+1. Identify all side effects: I/O, time, randomness, system calls, logging (not output — that's intentional)
+2. Move them to function arguments (inject them)
+3. Make the main logic pure — it just uses what it's given
+4. At the boundary, call the side effects and pass results to the pure function
+5. For testing: pass mock side-effect functions that return predictable values
 
 ---
 
-## Composition
+## When NOT to Apply This Skill
 
-Composition is the recursive act of building large things from small things — the heart of FP:
+Ignore strict FP purity in favor of pragmatism when:
 
-```
-// Small functions
-double(x): return 2 * x
-increment(x): return x + 1
-
-// Compose into larger function
-doubleThenIncrement = compose(increment, double)
-doubleThenIncrement(5)    // => 11
-
-// Compose into pipeline
-process(data):
-    data |> map(parseRecord)
-         |> filter(isValid)
-         |> map(transform)
-         |> reduce(mergeResults, {})
-```
-
-Each small function is independently testable, understandable, and reusable.
+- **Performance-critical hot paths:** Immutability-by-default allocates aggressively. If profiling shows allocation is the bottleneck, use mutable data in that inner loop only; wrap it in a pure interface. Benchmark before optimizing.
+- **Framework-imposed mixing:** Some frameworks (web servers, game engines, UI frameworks) mandate I/O inside event handlers. Extract and test the pure part separately; accept the framework constraint at the boundary.
+- **Prototype/spike:** You're exploring an approach and the code will be rewritten. Accept imperative code for speed; refactor later.
+- **Legacy codebase with no test coverage:** Refactoring to FP without tests risks introducing bugs. Use `/legacy-code` skill first to add characterization tests.
+- **External API boundaries:** You must match an external contract (database driver, HTTP client library). Wrap the impure boundary with a pure interface at your system boundary.
+- **Trivial single-statement functions:** A function that just calls `db.find()` and returns the result doesn't need pure refactoring — it IS the boundary.
 
 ---
 
-## Functional Architecture Patterns
+## K-Line History (Lessons Learned)
 
-### Event Sourcing
+### What Worked
 
-FP naturally supports event sourcing — state is built from a sequence of immutable events:
+- **Separating business logic from I/O:** Moving database calls to function arguments made three architectural problems immediately visible — callers weren't validating data before passing it. Fixed three bugs without touching logic.
+- **Immutability-first discipline in shared state:** One team adopted "all state bindings are const/val first" and saw 80% reduction in race conditions in multithreaded code. No architectural change — just discipline.
+- **Pipeline composition for data transformations:** Converting nested for-loops to `.filter().map().reduce()` chains eliminated 5 off-by-one bugs in one sprint. Readability improved enough that new team members could modify data flows on day 1.
+- **Pure functions for testing:** Business logic extracted to pure functions eliminated test doubles/mocks for that logic. Test suite got faster and clearer.
 
-```
-events = [
-    {type: ACCOUNT_CREATED, id: 1, name: "Alice"},
-    {type: DEPOSIT, id: 1, amount: 100},
-    {type: WITHDRAWAL, id: 1, amount: 30}
-]
+### What Failed
 
-applyEvent(state, event):          // Pure function
-    switch event.type:
-        ACCOUNT_CREATED: return state.with(name: event.name, balance: 0)
-        DEPOSIT: return state.with(balance: state.balance + event.amount)
-        WITHDRAWAL: return state.with(balance: state.balance - event.amount)
+- **Dogmatic FP in latency-sensitive code:** Immutable-by-default in a real-time audio processor caused 40% performance regression. Switched to mutable inner loop with pure interface; problem solved.
+- **Lazy evaluation without understanding:** Clojure sequences looked elegant but caused memory leaks when used carelessly with large datasets. Required explicit `doall` or materialization. Dogmatism beat pragmatism.
+- **Forcing composition where early exit matters:** A pipeline that filters and processes failed because some intermediate steps needed to abort. Rewritten as imperative code was clearer and more correct.
+- **Over-abstraction with monadic wrappers:** Scala code wrapped everything in `Option`/`Either` to the point that simple logic became hard to read. Stripped back to selective wrapping for genuinely risky operations.
 
-currentState = reduce(applyEvent, {}, events)
-// => {name: "Alice", balance: 70}
-```
+### Edge Cases
 
-The event log is the source of truth. Current state is derived. Replay events to recreate any historical state.
-
-### CQRS
-
-Aligns naturally with FP: **Commands** produce events (side effects at boundaries). **Queries** are pure functions that derive views from event history.
-
-### Middleware as Composition
-
-The middleware pattern is function composition — each middleware wraps the next handler:
-
-```
-wrapLogging(handler):
-    return (request) ->
-        log("Request:", request.uri)
-        response = handler(request)
-        log("Response:", response.status)
-        return response
-
-wrapAuth(handler):
-    return (request) ->
-        if not authenticated(request): return {status: 401}
-        return handler(request)
-
-app = compose(wrapLogging, wrapAuth, handler)
-```
-
-### Functional Web Architecture
-
-Websites are intrinsically functional: `HTTP Request --> [Function] --> HTTP Response`. A request comes in, a function processes it, a response goes out. In Clean Architecture terms: routes define interface adapters, each handler delegates to an interactor (pure business logic), side effects live at the boundaries.
+- **Concurrency model mismatches:** FP shines with immutable data + message passing (Erlang, channels). In imperative languages, FP immutability + imperative concurrency (threads/locks) causes friction. Use the language's concurrency model.
+- **Domain-specific abbreviations:** In mathematical/scientific code, single letters (`x`, `y`, `ssr`, `df`) ARE the domain names. Don't force descriptive names; but do make the domain clear in function headers.
+- **Performance profiling surprises:** What looked slow (immutability) was actually fast (structural sharing). What looked fast (mutable loop) was actually slow (allocation in aggregate). Always measure.
 
 ---
 
-## Testing in FP
+## Communication Style
 
-### TDD Works the Same Way
+When recommending FP refactoring:
 
-The red-green-refactor cycle is identical in FP:
-
-```
-// RED: Write failing test
-test "update score increments":
-    state = {score: 0}
-    result = updateState(state, {type: SCORE})
-    assert result.score == 1
-// FAIL: updateState not defined
-
-// GREEN: Minimum code
-updateState(state, event):
-    if event.type == SCORE: return state.with(score: state.score + 1)
-    return state
-// PASS
-
-// REFACTOR: (already clean)
-```
-
-### Coverage Strategy
-
-- **Business rules / game logic**: Near-100% coverage (pure functions — trivially testable)
-- **UI / rendering**: Eyeball tests (visual inspection)
-- **Side effects at boundaries**: Integration tests
-
-Pure functions need no mocking. Give them input, check the output.
-
-### TDD Is Never Enough Alone
-
-TDD requires algorithmic insight. Ron Jeffries attempted to solve Sudoku using pure TDD without understanding the algorithm — after many blog posts, he never solved it. Peter Norvig wrote a concise solver because he understood constraint propagation + backtracking search.
-
-TDD is the inner development loop. Thinking is the outer development loop. You need both.
-
----
-
-## When Reviewing FP Code
-
-1. **Mutable state:** Variables reassigned? Shared state across functions? In-place mutation (push, splice, sort)?
-2. **Impure functions:** Return value depends on something other than arguments? Void return type?
-3. **Composition opportunities:** Imperative loops that could be map/filter/reduce? Nested conditionals that could be pipeline stages?
-4. **Side effect isolation:** Are side effects at the boundaries? Is business logic free of I/O? Functional core, imperative shell?
-5. **Functional SOLID:** Protocols used for extension? Fat protocols that need segregation? High-level logic depending on concretions?
-
----
-
-## Common Pitfalls
-
-- **Impure core**: Business logic mixed with I/O (database calls inside calculation functions)
-- **Mutation hiding**: Reassigning "variables" that should be bindings
-- **Over-abstraction**: Unnecessary monadic wrappers when simple functions suffice
-- **Ignoring the imperative shell**: Trying to eliminate ALL side effects instead of isolating them
-- **FP dogmatism**: Rejecting OO patterns that genuinely help (protocols, interfaces, polymorphism)
-- **Neglecting TDD**: Thinking pure functions don't need tests because they're "obviously correct"
-- **Complex recursion**: Using explicit recursion where map/filter/reduce would be clearer
-
----
-
-## Related Skills
-
-- `/solid` — SOLID principles apply to FP through protocols and modules
-- `/tdd` — TDD works identically in FP
-- `/architecture` — Clean Architecture with functional implementation
-- `/patterns` — Functional patterns complement OO patterns
-- `/clean-code-review` — Review functional code quality
+1. **Show before/after in the project's actual language** — Include the full function, not pseudocode. Use the team's syntax and idioms.
+2. **Identify the specific rule violated** (Rule 1: Purity, Rule 2: Immutability, etc.) — Not "this code isn't FP enough" but "this function depends on global state (Rule 1: Purity) — here's how to fix it"
+3. **Estimate effort and risk:**
+   - "Safe rename + inject parameters" (low risk)
+   - "Extract core to new functions + refactor callers" (medium risk, needs tests)
+   - "Rewrite with immutable data structure" (high risk without test coverage)
+4. **Prioritize fixes:** Rule 1 (Purity: impure core) >> Rule 2 (Immutability: shared mutable state) >> Rule 3 (Side effect isolation) >> Rules 4-6 (Composition, HO-functions, transparency)
+5. **Acknowledge tradeoffs honestly:** "This is less performant in the hot path but more testable — benchmark to decide if it matters" or "This application requires I/O in handlers — we'll extract the pure part separately"
+6. **Batch related refactorings** — If five functions all need the same injection pattern, show one example and apply systematically
+7. **Never say "this isn't FP"** — Say "this function violates Rule X because [specific observation] — we can fix it by [concrete steps]"

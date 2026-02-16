@@ -1,423 +1,319 @@
 ---
 name: patterns
 description: >-
-  Guide identifying and applying design patterns appropriately. Activate when code
-  could benefit from patterns, when discussing GOF patterns, or when the user mentions
-  pattern names like Factory, Strategy, Observer, Command, State, Visitor, etc.
-  Patterns are tools for solving specific problems — not ends in themselves.
+  Apply design patterns appropriately. Activate when code has recurring problems
+  (creation, behavior variation, structural composition), when discussing pattern
+  choice, or when reviewing pattern implementations. Patterns solve specific
+  problems — activate when the problem is clear and a pattern can simplify.
+model: opus
 allowed-tools: Read, Grep, Glob
-argument-hint: [code or situation to analyze]
+delegates-to: naming, solid, functions, architecture
+argument-hint: [code or problem to solve]
 ---
 
 # Patterns Skill
 
-Design patterns are named solutions to recurring design problems. The GOF book (Gamma, Helm, Johnson, Vlissides, 1995) gave developers a shared vocabulary — a book full of names. Patterns are not templates to blindly apply but tools to solve specific problems. They represent chunks of design experience that can be communicated efficiently.
+Design patterns are named solutions to recurring design problems. They represent chunks of design experience communicable efficiently. This skill focuses on the decision framework — when to apply which pattern — not a catalog of all 23 GOF patterns.
 
-For extended examples, implementation deep dives, read `references/extended-examples.md`.
-
-**Critical Warning:** "When you have a nice shiny new hammer, everything looks like a nail." Patterns should emerge from need, not be applied preemptively. The goal is clean, simple code — patterns are tools to achieve that, not ends in themselves.
+**Core Truth:** Patterns should emerge from need, not be applied preemptively. Simple code that solves the problem is always better than an over-engineered pattern. When you have a hammer, everything looks like a nail.
 
 ---
 
-## Pattern Decision Framework
+## Step 0: Detect Context
 
-### When You See This Problem → Consider This Pattern
+Patterns manifest differently in PHP and TypeScript. Before recommending a pattern, identify:
 
-**Object Creation:**
+- **PHP:** OOP paradigm, static type system, dependency injection patterns, plain class hierarchies
+- **TypeScript:** Static type system, classes and functions, modules for DI, composition and interfaces
+- **Built-in abstractions:** Does the language provide this as a feature?
 
-| Problem | Pattern |
-|---------|---------|
-| Need to isolate concrete type creation | Factory (Abstract Factory or Factory Method) |
-| Need copies of existing objects | Prototype |
-| Need to construct complex objects step by step | Builder |
-| Need exactly one instance | Singleton (cautiously) or Monostate |
+**PHP and TypeScript Equivalents:**
 
-**Structural:**
-
-| Problem | Pattern |
-|---------|---------|
-| Incompatible interfaces need to work together | Adapter |
-| M × N class combinations from two dimensions | Bridge |
-| Tree structures with uniform treatment | Composite |
-| Add behavior dynamically without subclassing | Decorator |
-| Simplify complex subsystem | Facade |
-| Share fine-grained objects efficiently | Flyweight |
-| Control access or cross boundaries | Proxy |
-
-**Behavioral:**
-
-| Problem | Pattern |
-|---------|---------|
-| Decouple what-to-do from who/when | Command |
-| Complex state transitions | State |
-| Interchangeable algorithms | Strategy |
-| Fixed algorithm, varying steps | Template Method |
-| Notify multiple objects of changes | Observer |
-| Add operations to hierarchies without modifying them | Visitor |
-| Traverse without exposing internals | Iterator |
-| Centralized coordination of peers | Mediator |
-| Pass request through chain of handlers | Chain of Responsibility |
-| Capture/restore object state | Memento |
-| Eliminate null checks | Null Object |
-| Simple DSL | Interpreter |
-
-### Before Applying Any Pattern
-
-1. Do I have a specific problem this pattern solves?
-2. Will this simplify my code or complicate it?
-3. Does the pattern fit naturally, or am I forcing it?
-4. Can I explain why this pattern is appropriate here?
-
-If you can't answer these confidently, don't use the pattern.
+| Pattern | PHP Equivalent | TypeScript Equivalent | Notes |
+|---------|---|---|---|
+| Strategy | Interface binding, factory functions | Class composition, strategy pattern | Multiple algorithm families |
+| Observer | Observer interface pattern | Classes with subscription methods | Decouple state changes from handlers |
+| Factory | Factory classes, static methods | Factory functions, classes | Isolate type creation |
+| Decorator | Decorator classes, composition | Decorator classes, wrapper functions | Add behavior dynamically |
+| Null Object | Null-safe operators, optional values | Optional chaining, default values | Eliminate null checks |
+| Facade | Facade classes | Facade classes, module exports | Hide complexity behind clean interface |
+| State | State machine classes | State classes, enums | Manage transitions explicitly |
 
 ---
 
-## Creational Patterns
+## Step 1: Generate Context-Specific Rules
 
-### Factory Patterns
+Map GOF pattern names to the stack's idioms. A pattern in Python decorators is not an OOP Decorator pattern—it's language-native decoration. A pattern in Go is often implicit (interfaces are structural, not nominal).
 
-The core problem: **type-safe code creates source code dependencies on concrete types.** When you write `new ConcreteClass()`, you create a dependency that propagates.
+**Rule:** Always ask: "Does the language or framework already provide this abstraction?"
 
-**Abstract Factory** — creates families of related objects without specifying concrete classes:
-
-```
-interface EmployeeFactory:
-    makeEmployee(type): Employee
-
-class EmployeeFactoryImpl implements EmployeeFactory:
-    makeEmployee(type):
-        switch type:
-            HOURLY: return new HourlyEmployee()
-            SALARIED: return new SalariedEmployee()
-```
-
-The factory isolates creation from usage. Code that uses Employee depends only on the Employee interface. Main (or a boundary component) creates the factory and injects it.
-
-**Factory Method** — uses inheritance; a subclass decides which class to instantiate. The parent class defines the algorithm, subclass provides the concrete object.
-
-**The Type Wars:** Type-safe code uses enums/constants (compiler validates); configurable code uses strings (more flexible deployment). Resolution: use type-safe code internally, allow configuration at boundaries.
-
-### Builder
-
-Separates construction of a complex object from its representation. Works naturally with grammars — each grammar production triggers a builder method. A Facade that constructs something is essentially a Builder.
-
-```
-interface SyntaxBuilder:
-    newState(name)
-    newTransition(event, action, nextState)
-    done()
-
-class Parser:
-    builder: SyntaxBuilder
-    parse():
-        // Calls builder methods as syntax elements are recognized
-```
-
-### Singleton and Monostate
-
-**Singleton:** Ensure one instance with global access. Static initialization is thread-safe but eager. Lazy initialization has threading pitfalls (double-checked locking requires memory barriers).
-
-**When to avoid Singleton:** Creates hidden global state, makes testing difficult, hides dependencies. Better alternative: dependency injection with explicit single-instance management.
-
-**Monostate:** Achieve singleton behavior through static member variables while keeping the class instantiable. Clients don't know they're using a singleton. Unlike Singleton, supports inheritance and polymorphism.
-
-### Prototype
-
-Create new objects by copying existing ones. A registry maps names to prototype instances; `create(name)` clones the appropriate prototype.
+If yes, use the language feature. If no, implement the pattern as an idiom for your stack.
 
 ---
 
-## Structural Patterns
+## Step 2: Apply Decision Rules
 
-### Adapter
+NOT a catalog of patterns. Instead, decision rules: **"When you see this problem, consider this pattern."**
 
-Convert an incompatible interface into one clients expect.
+### Problem → Pattern Mapping
 
-```
-// You have this interface your system uses
-interface Switchable:
-    turnOn()
-    turnOff()
+**OBJECT CREATION PROBLEMS:**
 
-// You have this class you cannot modify
-class TableLamp:
-    illuminate()
-    darken()
+| What's the problem? | Pattern to consider | Why? |
+|-------------------|-------------------|------|
+| Concrete types leak into business logic | Factory / Abstract Factory | Isolate type dependency to a boundary |
+| Construction is complex, multi-step | Builder | Separate construction logic from the object |
+| Need exactly one instance, globally | Singleton (cautiously) or Monostate | Ensure single instance; DI usually better |
+| Need copies with state variation | Prototype | Registry of templates, clone on demand |
 
-// Bridge the gap
-class TableLampAdapter implements Switchable:
-    lamp: TableLamp
-    turnOn(): lamp.illuminate()
-    turnOff(): lamp.darken()
-```
+**BEHAVIOR VARIATION PROBLEMS:**
 
-**Object Adapter** (composition) — more flexible, can adapt subclasses, preferred. **Class Adapter** (inheritance) — more rigid, slightly more efficient. Name the adapter for what clients expect, not for the adaptee.
+| What's the problem? | Pattern to consider | Why? |
+|-------------------|-------------------|------|
+| Type-based conditional (`if type == X then Y`) | Strategy / Polymorphism | External polymorphism; family of algorithms |
+| Complex state machine, many transitions | State | Each state is a class; transitions are clear |
+| Same algorithm, different implementations | Template Method | Inheritance-based; fix at compile time |
+| Decouple "what to do" from "who/when" | Command | Encapsulate request as object; enables undo, queuing, audit |
+| Multiple objects need to change together | Observer | Notify dependents of state change automatically |
+| Need to traverse without exposing structure | Visitor / Iterator | Add operations from outside; lazy evaluation |
 
-### Bridge
+**COMPOSITION & STRUCTURAL PROBLEMS:**
 
-Decouple abstraction from implementation so both vary independently. Solves the **M × N problem:** M types of abstractions × N types of implementations becomes M + N classes.
+| What's the problem? | Pattern to consider | Why? |
+|-------------------|-------------------|------|
+| M type abstractions × N implementations = MxN classes | Bridge | Separate abstraction from implementation; M+N classes |
+| Incompatible interface needs wrapping | Adapter | Bridge the interface gap; object or class adapter |
+| Tree structure, uniform leaf/branch treatment | Composite | Recursive composition; same operations on all nodes |
+| Add behavior dynamically without subclassing | Decorator | Stack behavior; per-instance, not class-wide |
+| Complex subsystem needs simplified interface | Facade | Impose policy from above; reduce coupling to subsystem |
+| Share fine-grained objects efficiently | Flyweight | Separate intrinsic (shared) from extrinsic (context) state |
+| Control access or cross boundary | Proxy | Lazy loading, remote access, access control |
 
-```
-// Without Bridge: HourlyPrinterPaycheck, HourlEmailPaycheck,
-//   SalariedPrinterPaycheck, SalariedEmailPaycheck... M×N!
+**SPECIAL PROBLEMS:**
 
-// With Bridge: M + N
-interface PayStation:                    // Implementation dimension
-    output(data)
+| What's the problem? | Pattern to consider | Why? |
+|-------------------|-------------------|------|
+| Null checks everywhere | Null Object | Provide object with neutral behavior |
+| Need to restore previous state | Memento | Capture state without breaking encapsulation |
+| Request should pass through handlers | Chain of Responsibility | Each handler decides: process or pass |
+| Avoid cascading changes | Mediator | Coordinate peers without direct coupling |
+| DSL or language definition | Interpreter | Grammar production → builder method |
 
-class PrinterStation implements PayStation: ...
-class EmailStation implements PayStation: ...
+### When NOT to Apply Patterns
 
-abstract class Paycheck:                 // Abstraction dimension
-    station: PayStation
-    generate()
+**Pattern application is a smell if:**
 
-class HourlyPaycheck extends Paycheck:
-    generate():
-        data = calculateHourlyPay()
-        station.output(data)             // Delegate to implementation
-```
-
-Naturally supports Tell Don't Ask style.
-
-### Composite
-
-Compose objects into tree structures. Clients treat leaves and branches uniformly.
-
-```
-abstract class SyntaxNode:
-    accept(visitor)
-
-class TerminalNode extends SyntaxNode:    // Leaf
-    value: String
-
-class SequenceNode extends SyntaxNode:    // Branch
-    children: List<SyntaxNode>
-    accept(visitor):
-        visitor.visit(this)
-        for child in children:
-            child.accept(visitor)
-```
-
-### Decorator
-
-Add responsibilities dynamically. Part of the Visitor family — adds behavior from outside the class.
-
-```
-interface Modem:
-    dial(number), hangup(), send(data), receive()
-
-class LoudDialModem implements Modem:
-    modem: Modem
-    dial(number):
-        modem.setVolume(HIGH)
-        modem.dial(number)
-        modem.setVolume(LOW)
-    // Delegate all other methods to wrapped modem
-```
-
-Decorators stack: `new RetryModem(new LoggingModem(new LoudDialModem(new RealModem())))`. Unlike inheritance, decoration is dynamic, per-instance, and composable without class explosion.
-
-### Facade
-
-Provide a unified interface to a set of interfaces in a subsystem. "Imposing policy from above" — sits above subsystem classes and provides a simplified interface.
-
-### Mediator
-
-Define an object that encapsulates how a set of objects interact. "Imposing policy from below" — sits among peers, coordinates between them. The Puppeteer metaphor: the puppets (colleagues) don't know about each other; the puppeteer (mediator) makes them appear to interact.
-
-**Facade vs Mediator:** Facade calls down into subsystems. Mediator coordinates among peers.
-
-### Flyweight
-
-Share fine-grained objects efficiently by separating **intrinsic state** (shared, stored in flyweight) from **extrinsic state** (varies by context, stored outside). A factory manages the pool of shared instances.
-
-### Proxy
-
-Provide a surrogate that controls access to another object. Used when crossing boundaries — network, process, database. The proxy implements the same interface as the real object; clients don't know they're using a proxy.
-
-**Virtual Proxy** creates the real object only when needed (lazy loading). Key insight: Proxy can hide the fact that you're crossing a database boundary — business logic stays clean.
+1. **The code is already simple** — if no pattern needed, don't add one
+2. **Premature abstraction** — you've only seen one variant, you predict three; wait for actual need
+3. **Team doesn't know the pattern** — the cost of explanation/maintenance outweighs benefit
+4. **The framework already provides it** — use the framework abstraction, not your own
+5. **Fewer than 2-3 variants exist** — pattern overhead only pays off with meaningful variation
+6. **The pattern adds more code than it removes** — measure the coupling benefit vs. complexity cost
 
 ---
 
-## Behavioral Patterns
+## Step 3: Review Checklist
 
-### Command
+For each potential pattern application, verify:
 
-The simplest of all patterns — a single-method interface:
-
-```
-interface Command:
-    execute()
-```
-
-Decouples "what needs to be done" from "who does it" and "when it happens." Encapsulates a request as an object.
-
-**Key applications:** Button click handlers (GUI decoupled from business logic), undo/redo systems (UndoableCommand with `undo()` method, maintained in undo/redo stacks), thread decoupling and queuing (commands queued and executed by workers), the Actor Model (each actor has a command queue, processes sequentially).
-
-**Temporal decoupling:** Commands separate the moment of decision from the moment of execution — enabling scheduling, batching, persistence, and audit logging.
-
-### Strategy
-
-Define a family of algorithms, encapsulate each, make them interchangeable. **External polymorphism** — the polymorphic behavior happens outside the class hierarchy.
-
-```
-interface SortStrategy:
-    outOfOrder(i, j, array): boolean
-    swap(i, j, array)
-
-class BubbleSorter:
-    strategy: SortStrategy
-    sort(array):
-        for i in 0..length-1:
-            for j in 0..length-1-i:
-                if strategy.outOfOrder(j, j+1, array):
-                    strategy.swap(j, j+1, array)
-```
-
-Key insight: Strategy separates the **invariant** algorithm (bubble sort) from the **variant** details (comparison and swap).
-
-### Template Method
-
-Define the skeleton of an algorithm in a base class; subclasses override specific steps. **Internal polymorphism** — through inheritance.
-
-```
-abstract class BubbleSorter:
-    abstract outOfOrder(i, j): boolean
-    abstract swap(i, j)
-
-    sort():
-        for i in 0..length-1:
-            for j in 0..length-1-i:
-                if outOfOrder(j, j+1):
-                    swap(j, j+1)
-```
-
-**Strategy vs. Template Method:** Strategy uses composition (switch at runtime), Template Method uses inheritance (fixed at compile time). If you write the same loop with minor variations, that's a Template Method candidate.
-
-### State
-
-Manage complex state transitions by representing each state as a class.
-
-```
-interface TurnstileState:
-    coin(turnstile)
-    pass(turnstile)
-
-class LockedState implements TurnstileState:
-    coin(turnstile):
-        turnstile.unlock()
-        turnstile.setState(new UnlockedState())
-    pass(turnstile):
-        turnstile.alarm()
-
-class UnlockedState implements TurnstileState:
-    coin(turnstile): turnstile.thankyou()
-    pass(turnstile):
-        turnstile.lock()
-        turnstile.setState(new LockedState())
-```
-
-Three FSM implementation approaches: (1) nested switch/case (simple, becomes unwieldy), (2) table-driven (data-oriented), (3) State pattern (most OO, each state is a class).
-
-### Observer
-
-Define a one-to-many dependency so that when one object changes state, all dependents are notified automatically. Traces to MVC from Smalltalk (Model notifies Views without knowing about them).
-
-**Pull Model:** Observer calls `subject.getData()` in its update method — observers decide what they need. **Push Model:** Subject sends data in the notification — subject decides what to send. Pull is more flexible; push can be more efficient.
-
-**MVP (Model-View-Presenter):** Presenter mediates between Model and View, keeping both clean and testable. Warning: forgetting to deregister observers causes memory leaks.
-
-### Visitor
-
-Add operations to a hierarchy without modifying its classes.
-
-```
-interface Visitor:
-    visit(terminalNode)
-    visit(nonTerminalNode)
-
-abstract class SyntaxNode:
-    accept(visitor)
-
-class TerminalNode extends SyntaxNode:
-    accept(visitor): visitor.visit(this)
-```
-
-**The 90-degree rotation:** Without Visitor, easy to add types, hard to add operations. With Visitor, easy to add operations, hard to add types. This trade-off is fundamental.
-
-**The Visitor Family:** Visitor (adds operations), Decorator (adds behavior), Extension Object (adds interfaces). All add capability from outside the class.
-
-**Acyclic Visitor:** Breaks the dependency cycle by using separate visitor interfaces per node type with an empty marker base. Uses runtime type checking but allows visitors to handle only some types.
-
-### Iterator
-
-Access elements sequentially without exposing internal representation. Key power: **lazy evaluation** — compute values on demand, enabling infinite sequences.
-
-**Internal vs external iteration:** Internal iteration (forEach) — the collection controls traversal. External iteration (hasNext/next) — the client controls when to advance, stop, or interleave iterators.
-
-### Chain of Responsibility
-
-Pass a request through a chain of handlers until one handles it. Each handler either processes the request or passes it to the next. Always include a default handler at the end.
-
-### Memento
-
-Capture and externalize an object's internal state for later restoration without violating encapsulation. The memento is **opaque** to everyone except the originator — others can hold mementos but cannot inspect or modify them.
-
-### Null Object
-
-Provide an object with neutral behavior to eliminate null checks. Enables Tell Don't Ask style:
-
-```
-// Bad — ask then tell
-if employee != null:
-    employee.calculatePay()
-
-// Good — just tell (NullEmployee.calculatePay() does nothing)
-employee.calculatePay()
-```
-
-The null object's methods should do "nothing" — but what "nothing" means depends on context (NullLogger discards messages, NullIterator returns `hasNext() = false`).
-
-### Extension Object
-
-Add interfaces to objects dynamically. Objects maintain a map of extensions; clients query by interface type. Part of the Visitor family. Useful when you can't modify the original hierarchy.
-
-### Interpreter
-
-Define a grammar representation and an interpreter for it. About creating domain-specific languages.
-
-**Warning (Greenspun's Tenth Rule):** "Any sufficiently complicated program contains an ad hoc, informally-specified, bug-ridden, slow implementation of half of Common Lisp." Creating your own language is seductive but dangerous. For complex languages, use parser generators.
+| Question | Red Flag | Remedy |
+|----------|----------|--------|
+| **Justified?** Is there an actual, recurring problem this solves? | "I might need multiple implementations someday" without evidence | Wait for actual variation; apply pattern only after 2-3 variants exist |
+| **Natural fit?** Does the pattern simplify the code or add indirection? | More classes, more files, more indirection than the original conditional | Simple if/switch may be clearer; complexity should decrease |
+| **Correct?** Does implementation follow the pattern's intent, not just structure? | Implements the class structure but violates key intent | Review pattern rules; fix intent violations |
+| **Complete?** Are edge cases handled? | Thread safety gaps, deregistration memory leaks, missing default handlers | Add defensive code: thread checks, cleanup, defaults |
+| **Named well?** Do class/interface names communicate the pattern's role? | `DataProcessor`, `Manager`, `Helper` — naming hides intent | Names should hint at pattern role: `SortStrategy`, `TurnstileState` |
 
 ---
 
-## When Reviewing Pattern Usage
+## Step 4: Refactoring Patterns
 
-For each pattern found in code, verify:
+Named refactorings to apply when patterns are needed:
 
-1. **Justified:** Does it solve a specific, actual problem? (Not preemptive)
-2. **Natural fit:** Does it simplify the code, or add unnecessary indirection?
-3. **Correct:** Does the implementation follow the pattern's intent, not just its structure?
-4. **Complete:** Are edge cases handled? (Observer deregistration, Command undo state, Chain default handler, Singleton thread safety)
-5. **Named well:** Do class/interface names communicate the pattern's role?
+### Replace Conditional with Strategy
 
-### Pattern-Specific Checks
+**PHP Example:**
+```php
+// Before: Switch on payment method
+class PaymentProcessor {
+    public function process(Order $order, string $method): Receipt {
+        if ($method === 'stripe') {
+            return $this->processStripe($order->total());
+        } elseif ($method === 'paypal') {
+            return $this->processPayPal($order->total());
+        }
+    }
+}
 
-- **Command:** Truly decouples what/who/when? Undo captures required state?
-- **Factory:** Concrete types isolated from business logic? Main owns factory creation?
-- **Strategy/Template Method:** Invariant/variant split clean? Right choice between composition and inheritance?
-- **State:** All transitions explicit? Each state handles all events?
-- **Observer:** Registration/deregistration handled? No memory leak risk?
-- **Singleton:** Thread safety correct? Would DI be better?
-- **Visitor:** 90-degree rotation trade-off appropriate for this hierarchy?
-- **Bridge:** Actually reduces M×N to M+N?
+// After: Strategy via interface
+interface PaymentGateway {
+    public function charge(Money $amount): Receipt;
+}
+
+class PaymentProcessor {
+    public function __construct(private PaymentGateway $gateway) {}
+    public function process(Order $order): Receipt {
+        return $this->gateway->charge($order->total());
+    }
+}
+```
+
+TypeScript: Same pattern with `interface` and dependency injection through constructor.
+
+**When:** Type-based conditionals with multiple branches. Each branch is an algorithm variant.
+
+### Extract Factory
+
+**PHP Example:**
+```php
+// Before: Type creation scattered throughout
+// After: Factory interface isolates creation
+interface EmployeeFactory {
+    public function createHourly(string $name): Employee;
+    public function createSalaried(string $name): Employee;
+}
+
+class PayrollService {
+    public function __construct(private EmployeeFactory $factory) {}
+    public function create(string $type, string $name): Employee {
+        return match($type) {
+            'hourly' => $this->factory->createHourly($name),
+            'salaried' => $this->factory->createSalaried($name),
+        };
+    }
+}
+```
+
+TypeScript: Same pattern with factory methods in a class; inject as dependency.
+
+**When:** Concrete type creation scattered throughout codebase; isolate to factory boundary.
+
+### Introduce Null Object
+
+**PHP Example:**
+```php
+// Before: Null checks everywhere
+class PayrollService {
+    public function calculatePaycheck(?Employee $employee): Money {
+        if ($employee !== null) {
+            return $employee->calculatePay();
+        }
+        return Money::zero();
+    }
+}
+
+// After: Null Object pattern
+abstract class Employee {
+    abstract public function calculatePay(): Money;
+}
+
+class NullEmployee extends Employee {
+    public function calculatePay(): Money { return Money::zero(); }
+}
+
+class PayrollService {
+    public function calculatePaycheck(Employee $employee): Money {
+        return $employee->calculatePay();  // Always safe
+    }
+}
+```
+
+TypeScript: Same pattern using abstract class or interface with concrete null implementation.
+
+**When:** Repeated null checks throughout codebase; enable Tell Don't Ask pattern.
+
+### Simplify with Facade
+
+**PHP Example:**
+```php
+// Before: Complex setup scattered
+// After: Facade hides complexity
+class ReportFacade {
+    public function __construct(
+        private DataService $data,
+        private FormatterService $formatter,
+        private ValidationService $validator,
+        private ExportService $exporter
+    ) {}
+
+    public function generate(string $type): Report {
+        $data = $this->data->fetch();
+        $this->validator->validate($data);
+        $formatted = $this->formatter->format($data);
+        return $this->exporter->export($formatted);
+    }
+}
+
+// Client code: simple interface
+class ReportService {
+    public function __construct(private ReportFacade $facade) {}
+    public function show(): Report {
+        return $this->facade->generate('pdf');
+    }
+}
+```
+
+TypeScript: Same pattern; use a class with public methods hiding subsystem details.
+
+**When:** Complex subsystem; clients need simplified, stable interface.
+
+### Compose with Decorator
+
+**PHP Example:**
+```php
+// Before: Inheritance explosion (LoggingModem + RetryModem = ??)
+// After: Composition via decorator
+abstract class ModemDecorator implements Modem {
+    public function __construct(protected Modem $modem) {}
+}
+
+class LoggingModemDecorator extends ModemDecorator {
+    public function send(string $data): void {
+        echo "Sending: $data";
+        $this->modem->send($data);
+    }
+}
+
+// Compose at runtime: stack behaviors
+$modem = new LoggingModemDecorator(new BaseModem());
+```
+
+TypeScript: Same pattern; decorate wraps and delegates to inner component.
+
+**When:** Multiple optional behaviors; avoid inheritance explosion, favor composition.
+
+---
+
+## K-Line History
+
+Tracks decisions for pattern application. Log entries should note:
+- What problem you identified
+- Which pattern you chose
+- Key implementation decision (composition vs inheritance, etc.)
+
+**Example entries:**
+- "Type-based conditionals in `PaymentProcessor`. Applied Strategy with interface. Tests for swapping strategies at runtime."
+- "Rejected Decorator; used framework middleware instead. Team unfamiliar with pattern."
+- "State transitions in `Turnstile`. Applied State pattern; each state is a class."
+
+---
+
+## Communication Style
+
+When recommending or reviewing patterns:
+
+- **Show the problem first** — "I see type-based conditionals here; this suggests a pattern."
+- **Name the pattern** — Be explicit: "This would be Strategy."
+- **Explain the fit** — Why this pattern for this problem (not just its definition).
+- **Identify the tradeoff** — What becomes easier? What becomes harder?
+- **Flag the cost** — Extra classes, extra files, extra indirection; is it worth it?
 
 ---
 
 ## Related Skills
 
-- `/solid` — patterns implement SOLID principles (Strategy/State enable OCP, Factory enables DIP)
-- `/functions` — pattern methods must follow function principles
-- `/naming` — pattern classes and interfaces must reveal intent
-- `/architecture` — patterns at the architectural level (boundaries, plug-ins)
-- `/clean-code-review` — comprehensive review including pattern usage
+- `/naming` — Pattern classes must have clear, intent-revealing names
+- `/functions` — Pattern methods must follow function principles (small, focused, pure)
+- `/solid` — Patterns implement SOLID (Factory implements DIP, Strategy implements OCP)
+- `/architecture` — Patterns at module/component boundaries (where they live matters)
+- `/clean-code-review` — Comprehensive review including pattern usage appropriateness

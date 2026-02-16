@@ -1,6 +1,6 @@
 # Clean Code Guidelines
 
-Clean Code principles from Uncle Bob's teachings, organized as skills for AI agents. Every skill uses language-independent pseudocode examples.
+Clean Code principles from Uncle Bob's teachings, organized as operational skills for AI agents. Examples use PHP and TypeScript.
 
 ## The TDD Workflow
 
@@ -53,12 +53,12 @@ Code is NOT done until the review passes with no critical issues.
 
 ## How Skills Work
 
-Each skill has two layers of content:
+Each skill is an operational procedure with context detection (Step 0), decision rules (WHEN/WHEN NOT), severity-rated checklists, and named refactoring patterns. Skills follow a runtime procedure structure — they change agent behavior, not just provide reference material.
 
-- **SKILL.md** — Core principles and guidelines (loaded when the skill activates)
-- **references/extended-examples.md** — Detailed walkthroughs and case studies (loaded on demand for deep teaching or complex analysis)
+- **SKILL.md** — Operational procedure loaded when the skill activates (<500 lines)
+- **agents/** — Optional subagent definitions for delegation (analyzer/refactorer pairs)
 
-Skills delegate to each other. For example, `/clean-code-review` delegates to `/naming`, `/functions`, `/solid`, etc. for deep analysis of each dimension. `/teach-concept` delegates to whichever skill covers the concept being taught.
+Skills delegate to each other via `delegates-to` in frontmatter. For example, `/clean-code-review` delegates to `/naming`, `/functions`, `/solid`, etc. for deep analysis of each dimension.
 
 ## Applying Skills Proportionally
 

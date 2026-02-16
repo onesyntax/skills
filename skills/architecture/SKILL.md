@@ -1,313 +1,388 @@
 ---
 name: architecture
 description: >-
-  Design and review software architecture using Clean Architecture principles.
-  Activate whenever designing system structure, defining boundaries, creating
-  use cases, planning modules, reviewing dependency direction, or discussing
-  layers, deployment, or framework/database independence. Architecture touches
-  everything — if dependencies point the wrong way, no amount of clean code at
-  the function level will save the system.
+  Map Clean Architecture to your actual stack. Detect your framework, deployment model, and existing
+  patterns. Convert architecture principles into decision rules you can verify. Draw boundaries the
+  way your codebase needs — not from a textbook. Activate when designing system structure, defining
+  use cases, placing modules, reviewing dependency direction, or choosing monolith vs microservices.
+model: opus
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob
-argument-hint: [feature description or code to analyze]
+delegates-to: components, solid
+argument-hint: [feature/module to design or directory to analyze]
 ---
 
 # Architecture Skill
 
-Architecture is the art of drawing lines — boundaries that separate software elements and restrict dependencies. The goal is to minimize the human resources required to build and maintain the system. A good architecture keeps options open, defers decisions, and makes the system easy to change.
+Architecture is the art of drawing lines — boundaries that separate software and restrict dependencies. The goal: minimize human resources to build and maintain the system. Good architecture keeps options open, defers decisions, and makes the system easy to change.
 
-For SOLID principles at the class level, see `/solid`. For component cohesion and coupling metrics, see `/components`. For design patterns, see `/patterns`.
-
-For detailed architecture walkthroughs with full system examples, read `references/extended-examples.md`.
+Dependencies are everything. When dependencies point the right way, the rest of the system arranges itself. When they don't, no amount of clean code at the function level will save you.
 
 ---
 
-## The Two Values of Software
+## Step 0: Detect Your Context
 
-Software has exactly two values: **behavior** (what it does now) and **structure** (the ability to change it). Structure is more important — a system that works but can't change is worthless, because requirements will change. A system that doesn't work but can change is valuable, because you can make it work.
+Before applying any architecture rule, understand your actual stack. Architecture principles map differently depending on framework, structure, and deployment.
 
-Most managers prioritize behavior (urgent) over structure (important). Architects must fight for structure, or the system drowns in its own mess.
+### Detect: Monolith vs Microservices
+
+```bash
+# Find service boundaries — separate Dockerfiles, separate git repos, separate deployments
+find . -name "Dockerfile" | wc -l
+find . -name "docker-compose.yml" -o -name "kubernetes.yml"
+ls -la | grep -E "^d" | awk '{print $NF}' | head -20  # Top-level dirs (service breakdown hint)
+```
+
+**Decision Point:** Monolith (one deployment, all code) vs Microservices (multiple deployments, network boundaries)?
+
+### Detect: Framework
+
+```bash
+# PHP: composer.json + app/ directory structure
+test -f composer.json && grep -i "php" composer.json
+
+# TypeScript: package.json + src/ directory structure
+test -f package.json && grep -i "typescript" package.json
+
+# Full stack detection
+if test -f composer.json && test -f package.json; then
+    echo "PHP + TypeScript stack detected"
+fi
+```
+
+**Why it matters:** Pure domain entities should not depend on framework libraries. Business logic must be isolated from both the backend and frontend presentation layers.
+
+### Detect: Directory Convention
+
+```bash
+# Package by layer — layers are top-level directories
+ls -1 | grep -E "^(controllers|services|models|repositories|dto|config)$"
+
+# Package by feature — features are top-level directories
+ls -1 | grep -E "^(users|orders|billing|auth)$" | wc -l
+
+# Both? (dangerous — typically indicates inconsistent evolution)
+ls -1 | grep -E "^(controllers|services|models|repositories|dto|config|users|orders)$"
+```
+
+**Decision Point:** package-by-layer = thinking in architecture terms. package-by-feature = thinking in business terms. Feature usually wins for large systems.
+
+### Detect: Existing Boundary Patterns
+
+```bash
+# Look for explicit interfaces/ports (markers of architectural intent)
+find . -name "*Port.java" -o -name "*Boundary.ts" -o -name "*Gateway.py"
+
+# Look for dependency inversion patterns
+grep -r "interface.*Repository" --include="*.java" --include="*.ts" | wc -l
+
+# Look for presentation models / DTOs (boundaries)
+find . -name "*DTO*" -o -name "*Request*" -o -name "*Response*"
+```
+
+**Signal strength:** Strong = system already thinks about boundaries. Weak = will need to introduce them.
+
+### Detect: Deployment Model
+
+```bash
+# Monolith deployed as single unit
+test -f Dockerfile && grep -c "^FROM" && test $(grep -c "^FROM") -eq 1
+
+# Microservices or modular monolith (separate containers)
+find . -path "**/docker-compose.yml" -o -path "**/kubernetes/**/*.yml"
+
+# Serverless (Lambda functions, Cloud Functions)
+find . -name "serverless.yml" -o -name "sam.yml"
+```
 
 ---
 
-## The Dependency Rule
+## Step 1: Generate Context-Specific Rules
 
-**The most important rule in Clean Architecture: source code dependencies must point inward, toward higher-level policies.**
+Map Clean Architecture principles to PHP backend + TypeScript frontend:
 
+### PHP (Backend)
+
+- **Plain domain entities** — NOT coupled to any framework. True entities are simple PHP classes in the Domain layer.
+- **Business logic in Service classes or Use Cases** — NOT in ORM models or Controllers.
+- **Controllers are thin adapters** — parse request, call service/use case, return response. No business logic.
+- **Validation separated** — keep validation concerns separate from business logic.
+- **Repository pattern** — define interfaces in use case layer, implement in adapter layer.
+- **Dependency injection** — inject dependencies via constructor, enable swapping implementations.
+
+**Structure:**
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Frameworks & Drivers                      │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │              Interface Adapters                      │    │
-│  │  ┌─────────────────────────────────────────────┐    │    │
-│  │  │           Application Business Rules         │    │    │
-│  │  │  ┌─────────────────────────────────────┐    │    │    │
-│  │  │  │    Enterprise Business Rules        │    │    │    │
-│  │  │  │         (Entities)                  │    │    │    │
-│  │  │  └─────────────────────────────────────┘    │    │    │
-│  │  │           (Use Cases)                        │    │    │
-│  │  └─────────────────────────────────────────────┘    │    │
-│  │    (Controllers, Gateways, Presenters)              │    │
-│  └─────────────────────────────────────────────────────┘    │
-│      (Web, UI, DB, Devices, External Interfaces)            │
-└─────────────────────────────────────────────────────────────┘
+app/
+  Domain/              # Pure entities, value objects, business rules (no framework code)
+  UseCases/           # Application logic, interactors (orchestrate domain + gateways)
+  Repositories/       # Gateway interfaces (NOT implementations)
+  Http/
+    Controllers/      # Thin adapters, parse request, call use case, return response
+    Resources/        # DTO/response formatters
+  Services/           # Domain services, shared business logic
+  Adapters/
+    Persistence/      # Database repositories (implement gateway interfaces)
+  Providers/          # DI container wiring
 ```
 
-### The Four Layers
+### TypeScript (Frontend)
 
-**1. Entities (Enterprise Business Rules)** — Pure business objects with no knowledge of application or delivery mechanism. Would exist even if no software existed. Only change when business rules change.
+- **Classes and services for business logic** — NOT in UI components. Extract logic to service classes.
+- **Service classes** — encapsulate API calls, domain logic, and state management.
+- **Components are presentation-only** — handle rendering, user interaction, delegate to services.
+- **State management isolated** — use service classes or modules for business state.
+- **TypeScript interfaces** for domain models — `Order`, `User`, `CartItem` live in a domain layer, not scattered in components.
 
-**2. Use Cases (Application Business Rules)** — Application-specific rules. Orchestrate data flow to/from entities. Don't know about controllers, presenters, or views.
+**Structure:**
+```
+src/
+  domain/           # TypeScript types/interfaces, business rules (Order, User, validation)
+  services/         # Service classes (API, domain logic, business operations)
+  components/       # UI components (presentation-only)
+  pages/            # Page components (thin adapters, compose components + services)
+  models/           # Domain models and entities
+  utils/            # Pure utility functions
+```
 
-**3. Interface Adapters** — Convert data between formats convenient for use cases and formats convenient for external tools. Controllers, Presenters, Gateways. No business rules — only data conversion. MVC lives here.
+### Microservices
 
-**4. Frameworks & Drivers** — The outermost layer. Web frameworks, databases, UI frameworks. Mostly glue code. All the details go here.
+- **Each service IS a complete architecture** — not a layer. Each has its own domain model, use cases, persistence.
+- **Internal architecture still matters** — dependency rule applies within each service.
+- **Service boundaries == business boundaries** — organize by business capability, not technical layer.
+- **Database per service** — no shared databases across services. No joins between services.
 
 ---
 
-## Crossing Boundaries
+## Step 2: Apply Decision Rules
 
-**Data that crosses boundaries must be simple data structures. Never pass Entity objects or database rows across boundaries.**
+Convert architecture principles to testable, verifiable decision rules.
 
+### The Dependency Rule (WHEN/WHEN NOT/Verification)
+
+**WHEN to enforce:** Every file/class you write.
+
+**WHEN NOT to enforce:** Application bootstrap / wiring only (DI container bindings, known violations acceptable).
+
+**Verification:**
+
+```bash
+# PHP: No framework imports in domain layer
+find app/Domain app/UseCases -name "*.php" | while read f; do
+  grep -l "use PDO\|use Doctrine\|use Database" "$f" && echo "VIOLATION: Framework in domain: $f"
+done
+
+# PHP: No DB queries in controllers
+grep -rn "DB::\|->where(\|->find(\|->get()" app/Http/Controllers/ | grep -v "// " && echo "Query in controller"
+
+# TypeScript: No API calls in components (should be in services)
+find src/components -name "*.tsx" -o -name "*.ts" | while read f; do
+  grep -l "fetch\|axios\|fetch\|api\." "$f" && echo "VIOLATION: Direct API call in component: $f"
+done
+
+# TypeScript: No framework code in domain/
+find src/domain -name "*.ts" | while read f; do
+  grep -l "import.*express\|import.*axios\|import.*prisma" "$f" && echo "VIOLATION: Framework in domain: $f"
+done
 ```
-Controller --> InputBoundary(interface) --> Interactor --> OutputBoundary(interface) --> Presenter
+
+### Boundary Placement (WHEN to create vs keep together)
+
+**WHEN to create a new boundary:** When two subsystems change for different reasons (different actors, different deployment cycles, different teams).
+
+**WHEN to keep together:** When subsystems always change together, share data intimately, have high-frequency calls.
+
+**Test it:**
+```bash
+# Git blame: do these two files change together?
+git log --name-only --oneline -- app/Domain/Order.php app/Http/Controllers/OrderController.php | grep "^app" | sort | uniq -c | sort -rn
+
+# If Order.php appears in 30 commits and OrderController appears in 28 of those 30,
+# they're changing together — maybe they're not separate enough yet.
 ```
 
-- **Input Boundary (Port):** Interface the controller calls
-- **Output Boundary (Port):** Interface the use case calls to send results
-- **Interactor:** The use case implementation
-- **Request/Response Models:** Plain DTOs with primitive types only — no entities, no framework objects
+### Database Independence (WHEN to abstract vs direct access)
 
+**WHEN to use a gateway interface:** Always, for persistent data.
+
+**WHEN direct access is fine:** Reading configuration files, caches, temporary data not part of the domain model.
+
+**Pattern:**
 ```
-// Bad — passing Entity through boundary
-OrderResponse { order: Order }  // Entity leaking out!
+// In use_cases layer
+interface OrderRepository:
+    findById(orderId)
+    save(order)
 
-// Good — only the data needed
-OrderResponse {
-    orderId
-    customerName
-    total
+// In adapters layer — implemented multiple ways
+class PostgresOrderRepository implements OrderRepository
+class MockOrderRepository implements OrderRepository  (for testing)
+class InMemoryOrderRepository implements OrderRepository
+```
+
+### Framework Independence (WHEN to isolate vs embrace)
+
+**WHEN to isolate:** Business entities, domain logic, use case orchestration. The system should work without the framework (testable in pure code).
+
+**WHEN to embrace:** Controllers, presenters, models that inherit from framework base classes. These are adapter code; let the framework be itself.
+
+**Verification:**
+
+```bash
+# Can you test all business logic without starting the framework?
+# Run: mvn test -Dtest=OrderServiceTest (no @SpringBootTest, no @WebMvcTest)
+
+# If you need @SpringBootTest, the logic belongs in the use case, not the controller.
+```
+
+### Screaming Architecture (structure reveals intent)
+
+**Test:** Ask someone unfamiliar with the codebase to guess the business purpose from directory names alone.
+
+**Good:** app/Domain, app/UseCases, src/domain, src/services (reveals intent)
+**Bad:** app/models, app/views, app/controllers, src/components, src/utils (screams framework, not business)
+
+---
+
+## Step 3: Review Checklist
+
+Use this table for code review. For each item, mark yes/no/na. Critical items are show-stoppers.
+
+| Item | WHEN to check | How | Severity |
+|------|--------------|-----|----------|
+| **Dependency direction** | Every class | No inner layer imports outer framework code | CRITICAL |
+| **Boundary integrity** | New class/module | Does it cross a boundary? If so, use DTO, not entity | CRITICAL |
+| **Entity purity** | Domain classes | Free of framework annotations, database queries | CRITICAL |
+| **Use case isolation** | Interactor classes | No knowledge of UI, database, external API details | HIGH |
+| **Framework leakage** | Controllers, presenters | Spring/@Service/@Autowired lives here only, not in domain | HIGH |
+| **Screaming test** | Directory structure | Can you name the business purpose from top-level dirs? | MEDIUM |
+| **Humble objects at I/O** | Gateways, controllers, presenters | Minimal logic, delegates to domain, testable without framework | MEDIUM |
+| **No circular dependencies** | Module wiring | A depends on B depends on A? Use interface inversion to break | HIGH |
+
+---
+
+## Step 4: Refactoring Patterns
+
+### Invert Dependency Direction (DIP & Extract Use Case)
+
+**Problem:** Use case/service depends directly on concrete implementation, or business logic buried in controller.
+
+**PHP:**
+```php
+// Before: concrete dependency + logic in controller
+class OrderController {
+    public function store(Request $req) {
+        $order = DB::find('orders', $req->id); // direct DB call
+    }
+}
+
+// After: interface in use case, inject concrete implementation
+interface OrderRepository { public function findById($id); }
+class CreateOrderUseCase {
+    public function __construct(private OrderRepository $repo) {}
+    public function execute($req) { return $this->repo->findById($req->id); }
+}
+class DatabaseOrderRepository implements OrderRepository {
+    public function findById($id) { return DB::find('orders', $id); }
 }
 ```
 
-The Interactor sits at the center. Control flows through it, but dependencies point toward it — this is Dependency Inversion at the architectural level.
+**TypeScript:**
+```typescript
+// Before: direct fetch in service
+class OrderService {
+    async get(id: string) { return (await fetch(`/api/orders/${id}`)).json(); }
+}
 
----
-
-## Use Cases and Interactors
-
-A use case captures application-specific business rules — input, output, and processing steps.
-
-```
-CreateOrderInteractor implements CreateOrderInputPort:
-    orderGateway: OrderGateway
-    presenter: CreateOrderOutputPort
-
-    execute(request: CreateOrderRequest):
-        // 1. Validate request
-        // 2. Create/manipulate entities
-        // 3. Persist through gateway
-        // 4. Build response
-        // 5. Pass to presenter
+// After: inject repository interface
+interface OrderRepository { findById(id: string): Promise<Order>; }
+class OrderService {
+    constructor(private repo: OrderRepository) {}
+    async get(id: string) { return this.repo.findById(id); }
+}
+class HttpOrderRepository implements OrderRepository {
+    async findById(id: string) { return (await fetch(`/api/orders/${id}`)).json(); }
+}
 ```
 
-**Principles:** Use cases know about entities, not the reverse. Each use case has a single responsibility. Request/Response models are plain data structures with no behavior.
+**Verification:** Delete the concrete implementation; does your use case still compile with just the interface?
 
----
+### Push Framework to Outer Layer
 
-## The Humble Object Pattern
+**Problem:** Framework code leaks into domain entities.
 
-Separate hard-to-test code from easy-to-test code:
-
-- **Humble Object:** Hard-to-test code (UI, database), minimal logic
-- **Testable Object:** All business logic, receives/returns simple data
-
-**Examples:** Presenter (humble) / ViewModel (testable). Database Gateway (humble) / Interactor (testable).
-
----
-
-## Database and Framework Independence
-
-### The Database is a Detail
-
-The database is an I/O device. Business rules shouldn't know which database they use. Define a `DataGateway` interface in the use case layer; implement it in the outer layer with SQL/ORM/connection pooling.
-
-### Frameworks are Details
-
-Frameworks are tools, not architectures. The framework makes no commitment to you — you make a commitment to it.
-
-```
-// Bad — Entity coupled to framework
-class Customer:
-    [persistence annotations]
-    id
-    // business logic mixed with persistence concerns
-
-// Good — Entity is pure
-class Customer:
-    id: CustomerId
-    // pure business logic only
-
-// Framework details in outer layer
-class CustomerPersistenceModel:
-    [persistence annotations]
-    id
-    // only persistence concerns
+**PHP:** Domain order is pure (no ORM, no DB), persistence moves to adapters.
+```php
+// Domain: pure
+class Order {
+    public function calculateDiscount(): Money { return $this->amount->multiply(0.1); }
+}
+// Adapter: persistence
+class OrderPersister { public function save(Order $o) { /* DB here */ } }
 ```
 
-Never derive business entities from framework base classes. Isolate framework dependencies to outer layers.
-
----
-
-## Screaming Architecture
-
-The top-level directory structure should tell you what the system **does**, not what frameworks it uses.
-
-```
-// Bad — screams "Rails"          // Good — screams "Health Clinic"
-/app                               /patients
-  /models                          /appointments
-  /views                           /billing
-  /controllers                     /medical_records
+**TypeScript:** Domain order is pure, service calls handle API.
+```typescript
+// Domain: pure
+export class Order {
+    calculateDiscount(): number { return this.amount * 0.1; }
+}
+// Service: API layer
+class OrderService { async save(o: Order) { await fetch('/api/orders', {...}); } }
 ```
 
-**Package by feature, not layer.** Group code by business capability: `/orders` contains CreateOrderUseCase, OrderController, OrderRepository together.
+### Package by Feature
+
+**Problem:** Feature's controller, service, repository scattered across layer folders.
+
+**Before (by layer):** Hard to see what belongs to "orders"
+```
+app/Http/Controllers/OrderController.php
+app/Services/OrderService.php
+app/Domain/Order.php
+app/Repositories/OrderRepository.php
+```
+
+**After (by feature):** Feature boundary is clear
+```
+app/Features/Orders/
+  Http/OrderController.php
+  UseCases/CreateOrderUseCase.php
+  Repositories/OrderRepository.php
+  Domain/Order.php
+```
 
 ---
 
-## The Three Paradigms as Foundations
+## When NOT to Apply
 
-**Structured Programming (concrete blocks):** Sequence, selection, iteration — sufficient for any computation.
+- **Small CRUD apps** — if your app is "read form, write database, display result," don't force architectural layers. The framework IS your architecture.
+- **Prototypes** — exploring unknowns faster than architecture precision.
+- **Framework-heavy projects** — if fighting the framework costs more than the boundary benefit (e.g., Rails single-table inheritance), embrace it.
+- **Single-developer projects with no change pressure** — architecture is insurance against the cost of change. If change pressure is low, the premium isn't worth it.
+- **Scripts and utilities** — a 50-line CLI tool doesn't need use case interactors.
 
-**OO Programming (girders and beams):** The real power is safe polymorphism — inverting source code dependencies against the flow of control. Without this, Clean Architecture would be impossible.
-
-**Functional Programming (plumbing):** Immutability eliminates race conditions, deadlocks, concurrent update problems. Event Sourcing is FP's architectural manifestation.
-
-Each paradigm removes something: structured removes goto, OO removes function pointers (replaces with safe polymorphism), FP removes assignment.
-
----
-
-## Event Sourcing
-
-Store transactions (events) rather than state. CRUD becomes CR — no updates, no deletes, only new events. Current state is computed by replaying events.
-
-Git is event sourcing for source code. No mutable state means no race conditions, no concurrent update problems, no need for traditional locks.
+**Rule of thumb:** Apply architecture in proportion to change pressure. Greenfield systems: full architecture. Stable systems: minimal structure. Evolving systems: introduce structure as needed.
 
 ---
 
-## The Decoupling Modes Spectrum
+## K-Line History
 
-From tightest to loosest: Static Monolith → Dynamic Linking → Threads → Processes → Services/Microservices.
-
-**Architecture should be independent of decoupling mode.** The same source code boundaries should work whether deployed as monolith or microservices. Microservices are a deployment strategy, not an architectural strategy.
-
----
-
-## The Main Module
-
-Main is the dirtiest, lowest-level module — where all SOLID principles are violated, and that's acceptable. It creates concrete instances, wires dependencies, and knows about everything. All dependencies point away from Main.
-
-You can have multiple Main modules: one for production, one for testing, one for development — each wiring different concrete implementations. Tests are even lower than Main — they depend on everything, nothing depends on them.
+- 2025-Q1: PHP + TypeScript stack focus. Added detection commands and domain separation patterns.
+- 2024-Q1: Restructured around "detect then apply" — detect context before prescribing rules.
 
 ---
 
-## Types of Boundaries
+## Communication Style
 
-Not all boundaries are the same. Choose based on the system's needs:
-
-1. **Source-Level Boundaries** — Function calls within the same codebase, separated by interfaces. Cheapest to create, easiest to change. Start here.
-2. **Deployment Boundaries** — Separate JARs, DLLs, gems deployed together but compiled independently. Changes to one don't force recompilation of others.
-3. **Service Boundaries** — Separate processes communicating over the network. Most expensive, most independent. Only use when deployment independence is essential.
-
-**Strategy:** Start with source-level boundaries. Promote to deployment or service boundaries only when the cost of coupling exceeds the cost of separation. Components define the fracture lines — draw architectural boundaries along them later, when you know more.
-
----
-
-## Testing Architecture
-
-Clean Architecture makes testing natural — business rules live in the center, free of frameworks and I/O.
-
-**Unit tests** cover entities and interactors with mock gateways. Fast, isolated, no I/O. The bulk of your tests live here.
-
-**Integration tests** cover interactors with real gateways (test database), controller-to-presenter flows, and component boundaries.
-
-**End-to-end tests** cover the full stack. Slow, fragile, few in number. Verify wiring, not logic.
-
-The Humble Object pattern is the key: UI, database, and external services are humble (minimal logic, hard to test). Business logic is testable (all decisions, easy to unit test). If you can't test business rules without starting a web server or connecting to a database, the architecture has failed.
-
----
-
-## Common Architectural Mistakes
-
-1. **Database-Driven Design** — Starting with the schema instead of use cases and entities
-2. **Framework-Driven Design** — Letting the framework dictate architecture instead of living at the edges
-3. **Business Logic in Controllers** — Controllers should only parse input, call use case, format output
-4. **Entities Crossing Boundaries** — Use DTOs; entities stay in their layer
-5. **Circular Dependencies** — Use dependency inversion to break cycles
-6. **Ignoring Structure for Behavior** — Prioritizing "make it work" over "make it changeable"
-
----
-
-## When Writing Architecture
-
-### Implementation Steps
-
-1. **Define the Use Case** — What is the application doing? What are inputs (Request Model) and outputs (Response Model)?
-2. **Identify Entities** — What business objects are involved? What rules do they encapsulate?
-3. **Define Gateway Interfaces** — What external data is needed? Define interfaces in the use case layer
-4. **Implement the Interactor** — Pure business logic using entities and gateways
-5. **Create Interface Adapters** — Controller, Presenter, Gateway implementations
-6. **Wire Up Framework Layer** — Connect to web/database, inject dependencies pointing inward
-
-### Scale Guidance
-
-**Small projects:** Focus on use cases and entities. Keep boundaries simple. Don't over-engineer.
-
-**Growing projects:** Introduce explicit boundaries as complexity grows. Extract components as teams grow.
-
-**Large systems:** Full Clean Architecture with all layers. Multiple deployable components. Monitor dependency metrics (see `/components` for I, A, D metrics).
-
----
-
-## When Reviewing Architecture
-
-### Checklist
-
-**Dependency Rule:**
-- Do all dependencies point inward?
-- Are entities free of framework dependencies?
-- Are use cases free of UI and database details?
-- Any circular dependencies?
-
-**Boundaries:**
-- Defined by interfaces, not implementations?
-- Data structures (not entities) crossing boundaries?
-- Dependency Inversion at each boundary?
-
-**Testability:**
-- Can business rules be tested without UI/database/external services?
-- Are humble objects minimal?
-- Can gateways be easily mocked?
-
-**Intent:**
-- Does the architecture scream its business purpose?
-- Packages organized by feature, not layer?
-
-### Severity Levels
-
-| Severity | Type | Example |
-|----------|------|---------|
-| Critical | Dependency Rule violation — inner layer depends on outer | Entity imports Spring annotations |
-| High | Entities crossing boundaries, circular dependencies | Use case returns JPA entity |
-| Medium | Business logic in controllers, framework-driven structure | Validation rules in REST handler |
-| Low | Package-by-layer instead of package-by-feature | `/controllers` + `/services` instead of `/orders` |
+- **Be skeptical of pure architecture.** Framework reality wins. Design with the grain, not against it.
+- **Draw lines proportional to change pressure.** Premature abstraction is overhead; late abstraction is pain. Both are real costs.
+- **Test the architecture by removing pieces.** Can you test domain logic without the framework? If no, the boundary is wrong.
+- **Every boundary has a cost.** More abstraction = more interfaces, more indirection, more files. Worth it when it isolates change. Not worth it when it isolates nothing.
+- **Dependencies move more slowly than code.** You can refactor a function in a day; breaking a dependency cycle takes weeks. Protect dependencies carefully.
 
 ---
 
 ## Related Skills
 
-- `/solid` — SOLID principles for class-level design within architectural boundaries
-- `/components` — Component cohesion and coupling (REP, CCP, CRP, ADP, SDP, SAP) with stability metrics
-- `/patterns` — Design patterns that implement architectural concepts (Factory, Observer, Visitor, Proxy)
-- `/tdd` — TDD enables fearless refactoring and the tortoise's advantage
-- `/functional-programming` — FP provides immutability foundations for event sourcing
-- `/professional` — Professional standards for architectural decisions
+- `/solid` — SOLID principles for class/module design within boundaries
+- `/components` — Component cohesion, coupling metrics, stability
+- `/patterns` — Design patterns that implement architectural concepts

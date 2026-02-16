@@ -1,0 +1,34 @@
+{
+  "skill_name": "naming",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review the naming in this Go file and suggest improvements. The file is at evals/files/sample_go.go",
+      "expected_output": "A prioritized list of naming issues with severity levels, using Go naming conventions (PascalCase for exports, camelCase for unexported), with before/after suggestions in Go syntax",
+      "files": ["evals/files/sample_go.go"],
+      "expectations": [
+        "The skill detects Go as the language and uses Go naming conventions (PascalCase, camelCase)",
+        "The skill identifies UMgr as a cryptic abbreviation and suggests a full name like UserManager or UserRegistrationHandler",
+        "The skill identifies Proc as a non-descriptive function name and suggests something like RegisterUser or HandleUserRegistration",
+        "The skill identifies single-letter variables d, n, e, u, nu in long scope as red flags",
+        "The skill classifies issues by severity (red flag / warning / good sign to fix)",
+        "The skill provides before/after examples in Go syntax, not pseudocode",
+        "The skill does NOT explain what 'intent-revealing names' means as a concept — it just applies the rule",
+        "The skill checks Step 0 context detection before applying rules"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I'm naming a new Python class that handles sending emails via different providers (SendGrid, SES, Mailgun). What should I call it?",
+      "expected_output": "Concrete name suggestions in Python snake_case/PascalCase conventions with reasoning about why each works, not a lecture on naming principles",
+      "files": [],
+      "expectations": [
+        "The skill detects Python context and uses Python conventions (PascalCase for classes)",
+        "The skill suggests concrete names, not abstract naming rules",
+        "The skill avoids noise words like EmailManager or EmailHelper in its suggestions",
+        "The skill considers the class's single responsibility when suggesting names",
+        "The response is actionable — names the user can directly use, not principles to study"
+      ]
+    }
+  ]
+}

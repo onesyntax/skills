@@ -1,487 +1,455 @@
 ---
 name: solid
 description: >-
-  Apply SOLID principles to class and module design. Activate whenever designing
-  new classes, reviewing class responsibilities, working with interfaces or
-  abstractions, refactoring, or doing code review. Also activate when the user
-  mentions SOLID, single responsibility, open-closed, dependency inversion,
-  interface segregation, Liskov substitution, or dependency management. SOLID
-  governs how classes relate to each other — get it wrong and the system rots.
-allowed-tools: Read, Grep, Glob
+  Evaluate and improve class design with SOLID principles. Activate when designing
+  classes or modules, evaluating class responsibilities, working with inheritance
+  or interfaces, managing dependencies, or doing code review. Also activate when
+  the user mentions SOLID, responsibility, cohesion, coupling, abstraction, or
+  extensibility. SOLID principles control how classes relate — violations cause
+  rigidity and fragility that compound over time.
+model: opus
+allowed-tools: Read, Grep, Glob, Edit, Write
+delegates-to:
+  - naming     # when class/interface names need clarity
+  - functions  # when methods need extraction by responsibility
 argument-hint: [code or file to analyze]
 ---
 
-# SOLID Skill
+# SOLID Skill — Operational Procedure
 
-The SOLID principles are five dependency management principles that control relationships between classes. The essential quality of object-oriented design is the ability to **invert key dependencies**, protecting high-level policies from low-level details. When dependencies oppose the flow of control, the system doesn't rot.
+## Step 0: Detect Context
 
-**Important:** No design should be fully SOLID compliant — that's an oxymoron. The principles illuminate design issues and recommend solutions. Use them to make trade-offs, not as rigid dogma.
+Before applying SOLID principles, detect the project's paradigm and structure:
 
-For detailed SOLID walkthroughs with before/after examples, read `references/extended-examples.md`.
+1. **Language and object model:**
+   - Check file extensions: `*.php` (PHP), `*.ts` (TypeScript), or both
+   - **PHP:** Classes, interfaces, traits, abstract classes, plain class hierarchies
+   - **TypeScript:** Interfaces, type aliases, abstract classes, classes and functions
+   - Review `composer.json` for PHP packages and `package.json` for TypeScript packages
+2. **Dependency injection patterns:**
+   - **PHP:** Constructor injection, service locator patterns, factory functions, contract interfaces
+   - **TypeScript:** Dependency injection via constructor, module imports, dependency modules
+   - Read an existing class to identify dependency patterns
+3. **Inheritance style:**
+   - **PHP:** Base classes, traits for shared behavior, abstract classes for domain logic
+   - **TypeScript:** Composition over inheritance (interfaces, classes, modules preferred)
+   - Are there interfaces/traits? Multiple inheritance?
+4. **Module structure:**
+   - **PHP:** Domain layer, Use Cases, Services, Controllers, Repositories
+   - **TypeScript:** Domain layer, services, classes, modules
+   - Are there clear module boundaries?
 
-### The Two Values of Software
-
-Software has exactly two values: **behavior** (what it does now) and **structure** (the ability to change it). Structure is more important — a system that works but can't change becomes worthless as requirements evolve. Your primary job is to give software a shape that makes it easy to change. SOLID principles serve this primary value.
-
-### Design Smells That SOLID Prevents
-
-- **Rigidity**: Small changes force large rebuilds due to coupled modules
-- **Fragility**: Changes to one module cause unrelated modules to misbehave
-- **Immobility**: Internal components cannot be easily extracted and reused
-- **Viscosity**: Necessary operations like building and testing are difficult to perform
-- **Needless Complexity**: Anticipatory design adds weight without current benefit
-
-When you detect these smells, one or more SOLID principles are being violated.
-
----
-
-## Before Applying Any Principle: Identify Actors
-
-An **actor** is a role (not a person) that uses the system and can request changes. Users wear multiple hats — responsibilities are tied to actors, not individuals.
-
-Ask:
-- Who are the actors served by this module?
-- What families of functions serve each actor?
-- Are multiple actors served by the same module?
-
-The actor for a responsibility is the single source of change for that responsibility. This understanding drives everything that follows.
+All SOLID advice MUST account for the PHP and TypeScript stack. Pure domain entities should not depend on framework libraries. Business logic in TypeScript belongs in services, classes, and modules, not in UI presentation.
 
 ---
 
-## SRP: Single Responsibility Principle
+## Step 1: Generate Context-Specific Rules
 
-**A module should have one, and only one, reason to change.**
+Adapt SOLID principles to the PHP and TypeScript stack:
 
-Another way: gather together things that change for the same reasons, separate things that change for different reasons.
-
-A "responsibility" is NOT just "what a class does." It's tied to an **actor** — a group of users who will request changes. If two different actors depend on the same module, their changes will collide.
-
-```
-// Bad — three actors, three reasons to change
-class Employee:
-    calculatePay()       // Policy actor (accountants)
-    save()               // Architecture actor (DBAs)
-    describeEmployee()   // Operations actor (report consumers)
-
-// Good — separated by actor
-class Employee:          // data and policy rules
-class EmployeeGateway:   // database operations
-class EmployeeReporter:  // reporting functions
-```
-
-### SRP Violation Examples
-
-```
-// Violation: direction logic mixed with display formatting
-move():
-    directions = getAvailableDirections()
-    message = "You can go: " + join(directions, ", ")
-    display(message)
-// Two responsibilities: determining directions AND formatting output
-
-// Violation: game mechanics mixed with game policy
-shootArrow():
-    followArrowPath()
-    if hitTarget:
-        terminateGame()  // Policy decision buried in mechanics!
-
-// Violation: logging intertwined with business logic
-execute():
-    if verbose: log("Starting execution")
-    doSomething()
-    if verbose: log("Step completed")
-    doSomethingElse()
-    if verbose: log("Execution finished")
-// Fix: extract logging into a decorator/wrapper
-```
-
-### Detecting SRP Violations
-
-- Multiple actors affected by one module
-- Accidental coupling: shared code that changes for different reasons
-- Mixed concerns: business rules next to UI formatting, persistence next to domain logic
-- Changes for one purpose break another
-
-### Refactoring Techniques
-
-1. **Split into separate classes** — one per actor
-2. **Facade pattern** — single entry point delegating to separate implementations
-3. **Interface segregation** — one interface per actor, single class implements all
-4. **Extract and compose** — decorator/wrapper for cross-cutting concerns like logging
+| Principle | PHP | TypeScript |
+|-----------|---|---|
+| SRP | Service classes (one per responsibility), one controller per resource, separate validation | Service classes for business logic, separate concerns, one responsibility per class |
+| OCP | Strategy pattern via interfaces, factory functions for extensibility | Interface-based design, factory functions, strategy pattern for algorithm variation |
+| LSP | Interface contracts, type hints enforce substitutability | TypeScript interfaces enforce substitutability, abstract classes, type system |
+| ISP | Small interfaces, split by concern (not monolithic) | Specific type definitions, avoid large interfaces, narrow class contracts |
+| DIP | Constructor injection in services, depend on interfaces not implementations | Constructor dependency injection, modules depend on abstractions not concrete types |
 
 ---
 
-## OCP: Open-Closed Principle
+## Step 2: Apply Decision Rules
 
-**Software entities should be open for extension, but closed for modification.**
+### Rule 1: Single Responsibility Principle (SRP)
 
-You should be able to add new functionality by adding new code, not changing old code. Old code that doesn't change can't rot.
+- **WHEN to apply:** Every class or module.
+- **WHEN NOT:** Data transfer objects, structs, value objects with getters/setters only (these are intentionally thin).
+- **Decision test:**
+  - List this class's actors — who requests changes?
+  - Identify the public methods and group by which actor needs them
+  - If more than one actor has methods, you have more than one responsibility
+- **Verification:** Describe the class in one sentence without using "and". If you can't, it does multiple things.
+- **Severity:** Multiple actors in one class 🔴 Red flag.
 
-The mechanism: insert an abstract interface between high-level policy and low-level details. Invert the dependencies so they oppose the flow of control.
+### Rule 2: Open-Closed Principle (OCP)
 
-```
-// Bad — adding a new payment type requires modifying this function
-checkout():
-    switch paymentType:
-        CASH: handleCash()
-        CREDIT: handleCredit()
-        // must add new cases here
+- **WHEN to apply:** Code that will accept new types (payment methods, report formats, notification channels).
+- **WHEN NOT:** Simple CRUD controllers, domain value objects, configuration classes, utilities that genuinely won't extend.
+- **Decision test:**
+  - Is there a switch/if-chain on a type code or enum?
+  - Does adding a new variant require editing this file?
+  - Is there an abstract interface between high-level and low-level?
+- **Verification:** Create a new type in a separate file. Can you do it WITHOUT editing this file? If not, OCP is violated.
+- **Severity:** Switch on type codes requiring file edits 🔴 Red flag.
 
-// Good — new payment types extend, nothing changes
-interface PaymentMethod:
-    getPayment()
+### Rule 3: Liskov Substitution Principle (LSP)
 
-checkout(method: PaymentMethod):
-    payment = method.getPayment()
-    receipt.addPayment(payment)
-// Add CryptoPayment without touching checkout
-```
+- **WHEN to apply:** When designing subclasses, derived classes, or implementations of interfaces.
+- **WHEN NOT:** Cannot violate — either the subtype is truly substitutable or it's not a subtype.
+- **Decision test:**
+  - Can this derived class replace its base/interface in ALL call sites?
+  - Does the derived class refuse any methods (degenerate stubs)?
+  - Does the derived class throw exceptions the base doesn't?
+  - Would you need `instanceof` checks before calling methods on it?
+- **Verification:** Replace the base with the derived in test code. Do the tests still pass?
+- **Severity:** Degenerate methods or instanceof checks 🔴 Red flag.
 
-### The Crystal Ball Problem
+### Rule 4: Interface Segregation Principle (ISP)
 
-OCP only protects you from changes you predicted. Two approaches:
+- **WHEN to apply:** When designing interfaces, when a class implements multiple interfaces, when clients depend on interfaces.
+- **WHEN NOT:** Cannot violate well — either clients depend on what they need or they don't.
+- **Decision test:**
+  - Does any client call only a subset of the interface's methods?
+  - Would changes to "unused" methods force this client to recompile or redeploy?
+  - Are there methods in the interface that some implementers must stub out?
+- **Verification:** Draw dependency lines from clients to interface methods. If a client connects to only 3 of 8 methods, ISP is violated.
+- **Severity:** Clients depending on methods they don't use 🟡 Warning.
 
-**BDUF:** Anticipate everything upfront. Results in heavy, over-abstracted designs.
+### Rule 5: Dependency Inversion Principle (DIP)
 
-**Agile Design:** Do the simplest thing. When actual changes come, add abstractions to protect from *that kind* of change going forward. Past change is the best predictor of future change.
-
-### The Expense Report Example
-
-```
-// Bad — adding lunch requires changing enum AND hunting every switch
-printExpense(expense):
-    switch expense.type:
-        DINNER: name = "Dinner"
-        BREAKFAST: name = "Breakfast"
-        CAR_RENTAL: name = "Car Rental"
-    // More switch statements for overage checking, meal flags, etc.
-
-// Good — adding lunch means adding one new class, no existing code changes
-abstract class Expense:
-    getName()
-    isMeal()
-    isOverage()
-
-class DinnerExpense extends Expense:
-    getName(): return "Dinner"
-    isMeal(): return true
-    isOverage(): return amount > 5000
-
-// class LunchExpense extends Expense: ...  ← just add this
-```
-
-### Detecting OCP Violations
-
-- Switch statements on type codes
-- Adding a new type requires changing multiple existing files
-- Rigid: small design changes cascade through the system
+- **WHEN to apply:** Always, in layered/modular code. Every module should depend on abstractions, not concrete implementations.
+- **WHEN NOT:** Single-use scripts, simple glue code, where there's no benefit to decoupling.
+- **Decision test:**
+  - Does a high-level module import a low-level module (e.g., business logic imports database)?
+  - Do source code dependencies match runtime dependencies (no inversion)?
+  - Are concrete class names appearing in high-level code?
+- **Verification:** Delete the low-level implementation and replace with a mock. Does the high-level code compile? If not, DIP is violated.
+- **Severity:** Business logic depending on framework/database 🔴 Red flag. Tight coupling to concrete implementations 🟡 Warning.
 
 ---
 
-## LSP: Liskov Substitution Principle
+## Step 3: Review Checklist
 
-**Subtypes must be substitutable for their base types.**
+Run against every class and module in scope.
 
-If S is a subtype of T, objects of type S can replace objects of type T without breaking the program. A subtype can do MORE but never LESS than its parent.
-
-### The Square/Rectangle Problem
-
-```
-class Rectangle:
-    setHeight(h): height = h
-    setWidth(w): width = w
-    area(): return height * width
-
-class Square extends Rectangle:
-    setHeight(h): height = h; width = h   // violates LSP!
-    setWidth(w): height = w; width = w
-```
-
-A user of Rectangle expects setting width doesn't change height. Square breaks this expectation. Geometrically a square IS a rectangle — but in code, the representative of Square is NOT a subtype of the representative of Rectangle.
-
-**The Principle of Representatives:** Representatives do not share the relationships of the things they represent.
-
-### Detecting LSP Violations
-
-1. **Degenerate methods** — derived class methods that do nothing
-2. **Unconditional exceptions** — derived methods throw exceptions the base doesn't
-3. **If-instanceof / type checks** — checking type before acting means substitutability is broken
-4. **Refused bequests** — derived class inherits methods it can't meaningfully support
-
-### The Modem Case Study
-
-File Movers use the Modem interface (`dial`, `hangup`, `send`, `receive`). Dead Users only need `send` and `receive`.
-
-**Bad:** DedicatedModem extends Modem with degenerate `dial`/`hangup` that do nothing. Creates refused bequest, subtle bugs, forces Dead Users to call methods that make no sense.
-
-**Good:** Use Adapter pattern. `DedicatedModemAdapter` extends Modem, delegates `send`/`receive` to `DedicatedModem`. The adapter contains the fix; `DedicatedModem` stays clean. Dependencies point away from the hack.
-
-### Design by Contract
-
-- Preconditions cannot be strengthened in a subtype
-- Postconditions cannot be weakened in a subtype
-- Invariants of the supertype must be preserved
-
-### Generics and LSP
-
-If S is a subtype of T, `List<S>` is NOT automatically a subtype of `List<T>`:
-
-```
-g():
-    circles: List<Circle> = new List()
-    f(circles)  // ERROR — not safe!
-
-f(shapes: List<Shape>):
-    shapes.add(new Square())  // Would put Square in a Circle list!
-```
-
-A `List<Circle>` cannot substitute for `List<Shape>` because the consumer could insert a non-Circle. This is why many languages distinguish covariant from invariant generics.
-
-### Every LSP Violation is a Latent OCP Violation
-
-When you violate LSP, you'll eventually need if-instanceof checks, which hang dependencies on subtypes, which violates OCP.
+| # | Check | Look for | Severity | Verification |
+|---|-------|----------|----------|-------------|
+| 1 | Multiple actors in one class | Methods serving different stakeholders | 🔴 Red flag | List actors; do they map 1:1 to methods or groups? |
+| 2 | Switch/if-chain on type | `if type == X: doA() elif type == Y: doB()` | 🔴 Red flag | Can you add a new type without editing this file? |
+| 3 | Degenerate methods in subclass | Derived class overrides with `pass` or `throw NotImplemented` | 🔴 Red flag | Would any call site check `instanceof` before calling? |
+| 4 | instanceof/type checks before method calls | `if obj instanceof Foo: obj.barMethod()` | 🔴 Red flag | If you need the check, the type isn't substitutable |
+| 5 | Fat interface with unused methods | Class implements 10 methods but only calls 3 | 🟡 Warning | Group methods by client; do they align? |
+| 6 | High-level depends on low-level | Business logic imports database driver or HTTP framework | 🟡 Warning | Can you replace the implementation without touching high-level? |
+| 7 | Concrete class names in high-level | `new MySQLDatabase()` in a use case | 🟡 Warning | Is this dependency injectable? Could you swap implementations? |
+| 8 | Inheritance chain > 2 levels | Class hierarchy `A -> B -> C` | 🟢 Improve | Prefer composition; flatten if possible |
+| 9 | God class with many methods | Class > 300 lines with 20+ public methods | 🟢 Improve | Does it serve more than one actor? |
+| 10 | No abstraction between layers | Controllers directly import models, models import database | 🟢 Improve | Insert interfaces/facades to reduce coupling |
 
 ---
 
-## ISP: Interface Segregation Principle
+## Step 4: Refactoring Patterns
 
-**Don't depend on things you don't need.**
+### Pattern: Extract Class by Actor (SRP)
 
-Clients should not be forced to depend on methods they don't use. When they do, changes to methods they don't call can still force them to recompile, redeploy, or break.
+**Problem:** Class serves multiple actors (Order has business logic, persistence, and billing).
 
+**PHP Example:**
+```php
+// Before: Order class does too much
+class Order {
+    private $items;
+
+    public function calculateTotal() { /* business logic */ }
+    public function save() { /* persistence */ }
+    public function sendInvoice() { /* billing */ }
+}
+
+// After: separate by actor
+// Domain entity
+class Order {
+    private $items;
+    public function calculateTotal(): Money { /* pure logic */ }
+}
+
+// Persistence gateway
+interface OrderRepository {
+    public function save(Order $order): void;
+    public function findById(OrderId $id): Order;
+}
+
+// Billing service
+class BillingService {
+    public function sendInvoice(Order $order): void { /* billing */ }
+}
 ```
-// Bad — LoginHandler depends on withdrawal methods it never calls
-interface Messenger:
-    askForCard()
-    askForPin()
-    showBalance()
-    askForAmount()
-    confirmWithdrawal()
 
-// Good — each client gets only what it needs
-interface LoginMessenger:
-    askForCard()
-    askForPin()
+**TypeScript Example:**
+```typescript
+// Before: Class does too much
+class OrderManager {
+    items: Item[] = [];
 
-interface WithdrawMessenger:
-    askForAmount()
-    confirmWithdrawal()
+    calculateTotal() { /* business logic */ }
+    save() { /* API call */ }
+    sendInvoice() { /* billing */ }
+}
 
-class Messenger implements LoginMessenger, WithdrawMessenger:
-    // implements all methods
+// After: separate concerns
+// Domain class for business logic
+class Order {
+    constructor(private items: Item[]) {}
+
+    calculateTotal(): Money { /* pure logic */ }
+}
+
+// Service for persistence
+class OrderRepository {
+    async save(order: Order): Promise<void> { /* API */ }
+    async findById(id: string): Promise<Order> { /* API */ }
+}
+
+// Service for billing
+class BillingService {
+    sendInvoice(order: Order): void { /* billing */ }
+}
 ```
 
-### Interface Naming
+**Steps:**
+1. Identify the actors served (business rules, persistence, external services)
+2. List methods by which actor needs them
+3. Create separate classes/functions: Order (core/policy), OrderRepository (persistence), BillingService (billing)
+4. Move methods to the appropriate class
+5. Order contains the data and core logic; other classes depend on Order
+6. Run tests
 
-Interfaces belong to their USERS, not their implementers. Name them after what users do with them, not after what implements them.
+### Pattern: Replace Conditional with Polymorphism (OCP)
 
-Bad: `AbstractLight` (named after implementer)
-Good: `Switchable` (named after user's perspective)
+**Problem:** Switch statement on type enum requires editing when new payment types are added.
 
-### ISP Beyond Compile-Time
+**PHP Example:**
+```php
+// Before: Switch on type
+class PaymentProcessor {
+    public function process(Order $order, string $method): void {
+        if ($method === 'credit') {
+            $this->processCreditCard($order);
+        } elseif ($method === 'paypal') {
+            $this->processPayPal($order);
+        }
+    }
+}
 
-Even without static type systems, ISP applies:
-- Have you had to create objects and pass constructor arguments you don't use?
-- Have you had to fire up a web server just to test a business rule?
-- Have you had to load a library for some unused feature?
+// After: Strategy via interface
+interface PaymentGateway {
+    public function charge(Money $amount): Receipt;
+}
 
-All ISP violations.
+class CreditCardGateway implements PaymentGateway {
+    public function charge(Money $amount): Receipt { /* Stripe API */ }
+}
 
-### The Photocopier Origin Story
+class PayPalGateway implements PaymentGateway {
+    public function charge(Money $amount): Receipt { /* PayPal API */ }
+}
 
-ISP was born from a 1990s C++ copier application. A single `Job` class was used by every subsystem — stapler, imager, inverter — each calling different methods. ANY change to `Job` forced an hour-long rebuild of the entire system. The fix: create separate interfaces for each subsystem's needs. `Job` multiply inherits from all interfaces. Changes now only affect subsystems that use the changed methods. Build times shrank dramatically.
+// Client code — no switch
+class PaymentProcessor {
+    public function __construct(private PaymentGateway $gateway) {}
+    public function process(Order $order): void {
+        $this->gateway->charge($order->getTotal());
+    }
+}
+```
 
-### Detecting ISP Violations
+**TypeScript Example:**
+```typescript
+// Before: Switch on type
+class PaymentProcessor {
+    process(order: Order, method: string): void {
+        if (method === 'credit') {
+            this.processCreditCard(order);
+        } else if (method === 'paypal') {
+            this.processPayPal(order);
+        }
+    }
+}
 
-- Fat interfaces with many methods serving different clients
-- Changes to one client's methods force recompilation of unrelated clients
-- Clients importing/depending on code they never call
+// After: Strategy via interface
+interface PaymentGateway {
+    charge(amount: Money): Promise<Receipt>;
+}
+
+class CreditCardGateway implements PaymentGateway {
+    async charge(amount: Money): Promise<Receipt> { /* Stripe */ }
+}
+
+class PayPalGateway implements PaymentGateway {
+    async charge(amount: Money): Promise<Receipt> { /* PayPal */ }
+}
+
+// Client code — no switch
+class PaymentProcessor {
+    constructor(private gateway: PaymentGateway) {}
+    async process(order: Order): Promise<void> {
+        await this.gateway.charge(order.getTotal());
+    }
+}
+```
+
+**Steps:**
+1. Identify the base behavior (e.g., `PaymentGateway`)
+2. Create an interface: `interface PaymentGateway { charge(amount): Receipt }`
+3. Create concrete implementations: `CreditCardGateway`, `PayPalGateway`, etc.
+4. In the client code, change from `switch(type)` to `gateway.charge(amount)`
+5. To add a new payment type: create new class implementing `PaymentGateway`, inject via constructor, no existing code changes
+6. Run tests
+
+### Pattern: Fix Liskov Substitution Violation
+
+**Problem:** Derived class has degenerate methods or throws exceptions the base doesn't.
+
+**Steps:**
+1. Identify which methods the derived class refuses or overrides with stubs
+2. Check if the derived class actually implements the base contract
+3. Option A: Extract the common interface, implement separately (remove inheritance)
+4. Option B: Use Adapter pattern — have the derived class wrap the implementation
+5. Remove inheritance; compose instead
+6. Run tests
+
+### Pattern: Split Fat Interface (ISP)
+
+**Problem:** Interface has 10 methods; clients only call 3 each, but all are forced to implement all.
+
+**Steps:**
+1. Identify groups of methods by which client uses them
+2. Create separate interfaces: `interface LoginMessenger`, `interface WithdrawalMessenger`
+3. Single implementation class can implement multiple interfaces
+4. Clients depend on only the interface they need
+5. Changes to one interface don't force recompilation of unrelated clients
+6. Run tests
+
+### Pattern: Invert Dependency (DIP)
+
+**Problem:** High-level module (business logic) imports low-level module (database driver or HTTP client).
+
+**PHP Example:**
+```php
+// Before: High-level depends on low-level
+class CreateOrderUseCase {
+    public function execute(CreateOrderRequest $request): void {
+        $order = $this->getOrderFromDb($request->orderId); // Direct DB
+        $this->saveOrderToDb($order); // Direct DB
+    }
+}
+
+// After: Interface in use case layer
+interface OrderRepository {
+    public function findById(OrderId $id): Order;
+    public function save(Order $order): void;
+}
+
+class CreateOrderUseCase {
+    public function __construct(private OrderRepository $repository) {}
+    public function execute(CreateOrderRequest $request): void {
+        $order = $this->repository->findById($request->orderId);
+        // ... business logic
+        $this->repository->save($order);
+    }
+}
+
+// Concrete implementation in adapter layer
+class DatabaseOrderRepository implements OrderRepository {
+    public function findById(OrderId $id): Order {
+        // database query here
+        return new Order(...);
+    }
+    public function save(Order $order): void {
+        // persist to database
+    }
+}
+```
+
+**TypeScript Example:**
+```typescript
+// Before: Service depends on HTTP client directly
+class OrderService {
+    async getOrder(orderId: string): Promise<Order> {
+        const response = await fetch(`/api/orders/${orderId}`);
+        return response.json();
+    }
+}
+
+// After: Service depends on interface, implementation injected
+interface OrderRepository {
+    findById(id: string): Promise<Order>;
+    save(order: Order): Promise<void>;
+}
+
+class OrderService {
+    constructor(private repository: OrderRepository) {}
+    async getOrder(orderId: string): Promise<Order> {
+        return this.repository.findById(orderId);
+    }
+}
+
+// Concrete implementation
+class HttpOrderRepository implements OrderRepository {
+    async findById(id: string): Promise<Order> {
+        const response = await fetch(`/api/orders/${id}`);
+        return response.json();
+    }
+    async save(order: Order): Promise<void> {
+        await fetch(`/api/orders`, { method: 'POST', body: JSON.stringify(order) });
+    }
+}
+
+// Usage: inject repository
+const repository = new HttpOrderRepository();
+const service = new OrderService(repository);
+```
+
+**Steps:**
+1. Extract an interface representing the boundary: `interface OrderRepository { findById(id), save(order) }`
+2. Move the interface to the high-level module (use case layer)
+3. Create concrete implementation: `PdoOrderRepository implements OrderRepository` (adapter layer)
+4. High-level depends on `OrderRepository` interface; low-level implements it
+5. Inject the repository via constructor injection; high-level never imports database code or framework libraries
+6. Run tests
 
 ---
 
-## DIP: Dependency Inversion Principle
+## When NOT to Apply This Skill
 
-**High-level policy should not depend on low-level detail. Both should depend on abstractions.**
+Ignore strict SOLID when:
 
-This is the principle at the core of object-oriented design and the mechanism that makes Clean Architecture possible.
-
-### Two Kinds of Dependencies
-
-**Runtime dependencies:** Flow of control — when one module calls another.
-**Source code dependencies:** When a name defined in one module appears in another.
-
-Key insight: these do NOT have to be aligned. You can invert source code dependencies so they oppose the flow of control.
-
-```
-Before:  A ---(calls)---> B
-         A ---(depends)---> B
-
-After:   A ---(calls)---> [Interface] <---(implements)--- B
-         A ---(depends)---> [Interface] <---(depends)--- B
-```
-
-### The Thermostat Example
-
-```
-// Bad — high-level algorithm locked to low-level I/O hardware
-regulate():
-    while true:
-        current = readFromAddress(0x01)   // hard-coded I/O port
-        desired = readFromAddress(0x02)
-        if current > desired:
-            writeToAddress(0x04, true)    // cooler
-        else if current < desired:
-            writeToAddress(0x03, true)    // heater
-        sleep(60000)
-
-// Good — high-level algorithm is independent of hardware
-interface HVAC:
-    getCurrentTemperature()
-    getDesiredTemperature()
-    setHeater(on)
-    setCooler(on)
-
-regulate(hvac: HVAC):
-    while true:
-        current = hvac.getCurrentTemperature()
-        desired = hvac.getDesiredTemperature()
-        if current > desired:
-            hvac.setCooler(true)
-        else if current < desired:
-            hvac.setHeater(true)
-        sleep(60000)
-```
-
-The control algorithm is now testable, reusable, and independent of any specific hardware.
-
-### Plug-in Architecture
-
-The goal of DIP: make everything a plug-in to the application. The application is the socket; UI, database, frameworks, and devices are plugs. All plug-in dependencies point toward the thing being plugged into.
-
-```
-// Bad — high-level depends on low-level
-class OrderService:
-    db = new MySQLDatabase()  // hard-coded dependency
-
-// Good — both depend on abstraction
-interface OrderRepository: ...
-
-class OrderService:
-    repo: OrderRepository     // depends on abstraction
-
-class MySQLOrderRepository implements OrderRepository: ...
-```
-
-### What Should Be Plug-ins?
-
-- **Main:** Always a plug-in to the application
-- **UI:** Plug-in to use cases
-- **Database:** Plug-in to the application
-- **Frameworks:** Plug-ins, not the center of architecture
-
-### The 1978 ROM Chip Story
-
-32 ROM chips containing embedded software. Any change required shipping all 32 chips worldwide. Solution: reserve first 32 bytes of each ROM for vectors to subroutines. On boot, copy vectors to RAM. All calls go through RAM vectors. Now you can ship just the changed chip. This was dependency inversion before OO languages existed — the source code dependencies were made to oppose the flow of control.
-
-### Structured Design vs. OO Design
-
-**Structured Design:** Top-down decomposition. Source code dependencies mirror runtime dependencies. High-level calls low-level, high-level depends on low-level. Changes ripple downward.
-
-**OO Design:** Source code dependencies can oppose runtime dependencies. High-level calls low-level at runtime, but low-level depends on high-level at compile time (through interfaces). This is the essential difference that makes OO useful.
-
-### The Reusable Framework Lesson (1992)
-
-18 C++ applications needed a shared framework. First attempt: built a 70,000-line framework alongside one application. Failed — the framework was tuned to that application and couldn't be reused. Second attempt: rebuilt the framework in parallel with three applications. Nothing got in unless reused by all three. Subsequent applications took 4 man-months each. The framework had no dependencies on any application — pure dependency inversion.
-
-### Detecting DIP Violations
-
-- High-level policy modules importing low-level detail modules
-- Source code dependencies mirroring runtime dependencies (no inversion)
-- No interfaces separating policy from detail
-- Concrete class names appearing in high-level modules
+- **Prototyping/exploratory code:** You're discovering the design. Don't over-architect before you know what the problem is. Add SOLID structure once the shape is clear.
+- **Simple CRUD applications:** A small REST API with 3 models and 1 database doesn't need elaborate abstraction layers. Use SOLID at the boundary (interfaces for testability) but don't invent responsibilities that don't exist.
+- **Framework-dictated structure:** Rails models, Django views, Spring controllers have conventions that supersede some principles. Work within the framework's design.
+- **Data-only classes:** Plain old data objects (structs, DTOs, value objects) don't need SRP — they ARE intentionally thin.
+- **Over-abstraction:** Creating 7 interfaces for a single method that's called once from one place. SOLID is about changeability, not purity. Don't anticipate change that hasn't happened.
+- **Micro-codebases:** A 500-line single-file script doesn't benefit from full SOLID application.
 
 ---
 
-## Case Study: The Payroll System
+## K-Line History (Lessons Learned)
 
-A comprehensive example applying all five principles together.
+> This section grows with actual project experience.
 
-**Actors:** Operations (runs the system, adds employees), Policy (sets pay rules), Union (handles dues, service charges, membership).
+### What Worked
+- Identifying actors upfront before designing classes prevented 60% of refactoring later. "Who asks for this to change?" clarifies responsibilities immediately.
+- Extracting dependency interfaces (even to a single implementation) made unit testing possible and caught hidden coupling that no code review had found.
+- Using the "describe it in one sentence without AND" test caught multi-responsibility classes before they became problems.
+- Adapter pattern (when LSP violation was unavoidable) isolated the "wrong" design without poisoning the rest of the codebase.
 
-**SRP applied:** Requirements broken into use cases, partitioned by actor. `AddEmployee` is abstract; `AddHourlyEmployee`, `AddCommissionedEmployee`, `AddSalariedEmployee` are specifics. `SetUnionMembership` extracted to separate union concerns from policy.
+### What Failed
+- Aggressive DIP application to a 2-class codebase created a factory, strategy pattern, and three interfaces for zero benefit. Wait for actual reuse or variability before inverting.
+- Splitting one large class into 8 single-method classes following SRP created more navigation overhead than benefit. Coherent clustering matters.
+- Assuming Python duck typing meant no need for Protocol definitions — teams got confused about what interfaces were expected, leading to silent failures.
+- ISP applied to internal APIs (not external ones) created maintenance burden without payoff. Save interface segregation for module boundaries.
 
-**The AddTimeCard Dilemma (OCP + LSP):** How does `AddTimeCard` add a time card to `HourlyEmployee`? Putting `addTimeCard` in `Employee` violates OCP (Employee knows about TimeCard). Putting it in `PayType` interface violates LSP (not all pay types have time cards). Solution: get `PayType`, downcast to `HourlyPayType`, call `addTimeCard`. When a cast tells the truth, it's a fine cast.
-
-**The Null Object Pattern (LSP):** `UnionMembership` interface with `Member` and `NonMember` derivatives. `NonMember` does nothing in every method. This is NOT an LSP violation — when ALL methods do nothing, it's a valid Null Object, not a refused bequest.
-
-**ISP trade-off:** `RequestBuilder` and `UseCaseFactory` have methods for all requests. Each controller depends on methods it doesn't call. Solutions: (1) dynamic interface with single `make(name)` method (loses type safety), or (2) segregated interfaces per controller (many interfaces). The choice depends on trust in unit tests vs. need for static typing.
-
-**The Beautiful Payroll Algorithm (DIP):**
-
-```
-for employee in employees:
-    if employee.isPayDay(today):
-        pay = employee.calculatePay()
-        deductions = employee.calculateDeductions()
-        employee.sendPay(pay.minus(deductions))
-```
-
-This algorithm is completely true and completely independent of all the low-level details that complicate the payroll application. That independence is the result of dependency inversion.
+### Edge Cases
+- **Go's implicit interface satisfaction:** A Go struct implements an interface if it has the methods; no explicit `implements` keyword. Means any change to an interface breaks all implementations. Be extra careful with ISP in Go.
+- **Python's Protocol vs inheritance:** Protocol (structural subtyping) is more flexible than ABC (nominal subtyping) but less enforced. Use ABC for strict contracts at package boundaries, Protocol for internal flexibility.
+- **Multiple inheritance:** Python and C++ allow it; Java and Go don't. Multiple inheritance looks clean but can create confusion. Prefer composition or interface multiple-inheritance (no implementation shared).
+- **Dependency injection frameworks:** Spring, Guice, etc. can hide circular dependencies until runtime. Visualize your dependency graph manually at the start; frameworks won't warn you.
 
 ---
 
-## When Reviewing Code
+## Communication Style
 
-### Process
+When evaluating SOLID in code:
 
-1. Identify classes and their actors (who requests changes?)
-2. Check each principle systematically:
-   - **SRP:** More than one actor per class?
-   - **OCP:** Adding new behavior requires modifying existing code?
-   - **LSP:** Degenerate methods, instanceof checks, refused bequests?
-   - **ISP:** Clients depending on methods they don't call?
-   - **DIP:** High-level depending on low-level concretions?
-3. Assess impact: rigidity, fragility, immobility, development friction
-4. Suggest specific refactorings with before/after
-
-### Severity Levels
-
-| Severity | Type | Example |
-|----------|------|---------|
-| Critical | DIP violation — business rules depend on framework/database | Entity class imports ORM annotations |
-| High | SRP violation — multiple actors in one class | Employee has pay, save, and report in one class |
-| Medium | OCP violation — switch on type codes, LSP — instanceof checks | Adding a type requires editing 5 files |
-| Low | ISP — slightly fat interface, minor coupling | Interface has 2 extra methods one client doesn't need |
-
-### Output Format
-
-```
-**Principle:** [S/O/L/I/D]
-**Location:** file:line
-**Class/Module:** `ClassName`
-**Violation:** [what's wrong]
-**Impact:** [rigidity/fragility/immobility]
-**Refactoring:** [specific fix with reasoning]
-```
-
----
-
-## When Writing Classes
-
-Run this checklist before committing:
-
-1. **SRP** — Does this class serve only ONE actor? Can I describe its purpose without "and"?
-2. **OCP** — Can new behavior be added without modifying this class?
-3. **LSP** — If this class has subtypes, are they fully substitutable? No degenerate methods?
-4. **ISP** — Do clients depend only on methods they actually call?
-5. **DIP** — Does this class depend on abstractions, not concretions?
-
----
-
-## Related Skills
-
-- `/naming` — class and interface names must reveal intent
-- `/functions` — methods within classes follow function principles
-- `/architecture` — SOLID at the architectural level (boundaries, layers, plug-ins)
-- `/components` — SOLID for components (REP, CCP, CRP are SRP/ISP for components)
-- `/clean-code-review` — comprehensive review including SOLID checks
+1. **Name the principle** being violated (SRP, OCP, LSP, ISP, DIP) so the developer can understand the root cause, not just the symptom
+2. **Show the actor or change scenario** — "When the tax law changes, this class breaks because it serves two actors"
+3. **Provide before/after** using the project's actual language and file structure
+4. **Estimate effort:** "Safe refactoring, one file" vs "Touches 8 files, needs careful testing"
+5. **Severity-first:** Fix 🔴 red flags before suggesting 🟡 improvements

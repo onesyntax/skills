@@ -1,0 +1,37 @@
+{
+  "skill_name": "functions",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review this Python function for clean code issues. The file is at evals/files/sample_python.py",
+      "expected_output": "A prioritized list of function issues with severity, using Python idioms for suggested fixes, identifying the function as doing multiple things at mixed abstraction levels",
+      "files": ["evals/files/sample_python.py"],
+      "expectations": [
+        "The skill detects Python as the language in Step 0",
+        "The skill identifies the function as doing multiple things (validation, inventory check, calculation, persistence, notification, logging)",
+        "The skill flags the function as critically oversized (60+ lines)",
+        "The skill identifies the boolean arguments (notify, dry_run) as warnings",
+        "The skill identifies mixed abstraction levels (SQL queries next to business logic next to HTTP calls)",
+        "The skill identifies the bare except clause as an error handling issue",
+        "The skill suggests Extract Till You Drop as the primary refactoring pattern",
+        "The skill provides suggested function extractions using Python syntax (def validate_order, def check_inventory, etc.)",
+        "Issues are classified by severity (red flag / warning / improve)",
+        "The skill does NOT lecture about what 'single responsibility' means — it identifies the specific responsibilities and suggests how to separate them"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I have a Go HTTP handler that takes (w http.ResponseWriter, r *http.Request, db *sql.DB, logger *log.Logger, config *Config). Should I refactor the arguments?",
+      "expected_output": "Context-aware advice that recognizes Go conventions (http handler signature is idiomatic) while suggesting a parameter object for the extra dependencies",
+      "files": [],
+      "expectations": [
+        "The skill detects Go as the language",
+        "The skill recognizes that (w http.ResponseWriter, r *http.Request) is idiomatic Go and should NOT be changed",
+        "The skill identifies the extra 3 args (db, logger, config) as candidates for a struct or constructor injection",
+        "The skill suggests Go-idiomatic solutions (struct with method, or dependency injection via constructor)",
+        "The skill does NOT suggest combining all 5 args into a single parameter object — that would fight Go conventions",
+        "The response uses Go syntax for before/after examples"
+      ]
+    }
+  ]
+}

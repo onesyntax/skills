@@ -1,0 +1,35 @@
+{
+  "skill_name": "tdd",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I need to implement a function that validates email addresses. Use TDD. The project uses Python with pytest. There's a pyproject.toml in the root.",
+      "expected_output": "A TDD cycle showing RED-GREEN-REFACTOR phases with actual pytest syntax, starting with degenerate cases",
+      "files": [],
+      "expectations": [
+        "The skill detects Python/pytest as the test stack in Step 0",
+        "The skill uses pytest syntax (def test_, assert) not generic pseudocode",
+        "The first test is a degenerate case (empty string, None, or similar), not the happy path",
+        "Each RED phase shows a failing test before any production code is written",
+        "Each GREEN phase shows minimum code to pass — not the complete validation logic upfront",
+        "The REFACTOR phase applies naming and functions skills, not just 'clean up'",
+        "The cycle time feels incremental — not one massive test followed by one massive implementation",
+        "The skill does NOT explain what TDD is or why it matters — it just executes the cycle"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Review these tests for quality. They're in a TypeScript/Jest project.\n\ntest('user test', () => {\n  const db = new MockDB();\n  const svc = new UserService(db);\n  const result = svc.createUser('john', 'john@test.com');\n  expect(result.id).toBeDefined();\n  expect(result.name).toBe('john');\n  const found = svc.getUser(result.id);\n  expect(found.name).toBe('john');\n  expect(found.email).toBe('john@test.com');\n  svc.deleteUser(result.id);\n  expect(svc.getUser(result.id)).toBeNull();\n});",
+      "expected_output": "Identified issues with severity levels: multiple Act phases (red flag), vague test name (warning), tests behavior through multiple operations",
+      "files": [],
+      "expectations": [
+        "The skill detects TypeScript/Jest as the stack",
+        "The skill identifies multiple Act-Assert sequences as a red flag (AAA violation)",
+        "The skill identifies the vague test name 'user test' as an issue",
+        "The skill suggests splitting into separate tests with descriptive names",
+        "Issues are classified by severity (red flag / warning / improve)",
+        "The skill uses Jest/TypeScript syntax in its suggestions, not pseudocode"
+      ]
+    }
+  ]
+}

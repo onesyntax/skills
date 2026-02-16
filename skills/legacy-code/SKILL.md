@@ -1,254 +1,415 @@
 ---
 name: legacy-code
 description: >-
-  Guide working with legacy code using Uncle Bob's and Michael Feathers' techniques.
-  Activates when dealing with old, untested, or poorly structured code, when the user
-  mentions legacy code, technical debt, characterization tests, strangulation, working
-  with old code, or when facing code that is difficult to change or test.
+  Operational guide for working with legacy code incrementally. Activates when dealing
+  with untested, poorly structured, or difficult-to-change code. Use characterization
+  tests, Boy Scout acts of kindness, clean module extraction, and strangulation technique
+  to improve volatile code while protecting it with tests.
+model: opus
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob
+delegates-to: [tdd, refactor-suggestion, solid, architecture]
 argument-hint: [file or directory to analyze]
 ---
 
 # Legacy Code
 
-Guide for working with legacy code using Uncle Bob's teachings and Michael Feathers' techniques from "Working Effectively with Legacy Code."
-
-For extended examples (characterization test walkthroughs, strangulation case studies, real-world acts of kindness), read `references/extended-examples.md`.
-
-## Workflow Steps
-
-1. **Assess the situation** — what legacy code are you touching and why? Any existing tests?
-2. **Apply the Boy Scout Principle** — plan one small act of kindness alongside the required change
-3. **Write characterization tests** where possible — capture current behavior as a safety net
-4. **Add new features in clean modules** — write new code with TDD, integrate at boundaries
-5. **Perform incremental cleanup** — one rename, one split, one decouple — then check in
-6. **Watch for strangulation opportunities** — when clean code surrounds legacy code, it's safe to rewrite
-7. **Apply /professional standards** — never check code in worse than you found it
+Operational guide for incremental improvement of untested legacy systems.
 
 ---
 
-## What Is Legacy Code?
+## Step 0: Detect Context
 
-Legacy code is not defined by age — it is defined by how it was written. It is code created without proper discipline, tests, or clean design. Critically, legacy code is being actively created TODAY by teams that don't follow clean code practices.
+Before choosing a strategy, understand what you're working with.
 
-Michael Feathers' key insight: an associate joined a new team that was "busy writing legacy code" — on a brand new project. Legacy code is a discipline problem, not an age problem.
+### Test Coverage
 
-There is no magic solution. No special project, no magic wand. It's going to require long, patient, disciplined work. But there IS a path forward.
+Check for any existing tests:
 
----
+```bash
+# Find test files
+find . -name "*Test.php" -o -name "*.test.ts" -o -name "*.test.tsx" -o -name "*.spec.ts"
 
-## The Four Anti-Patterns
+# Check coverage reports
+ls -la coverage/ .coverage* 2>/dev/null
 
-### 1. Do Not Start a Cleanup Project
-
-Do not go to your boss and beg for time to clean things up. Do not make promises about timelines or improvements. Cleanup projects almost always fail badly, leaving teams discouraged and discredited, and the code badly mangled. The reason: cleanup projects try to fix everything at once with artificial deadlines, which leads to rushed, incomplete work.
-
-### 2. Do Not Go on a Refactoring Hunt
-
-Don't scan through the code looking for opportunities to refactor. The vast majority of code in a system has not been touched for years and is not likely to be touched anytime soon. Refactoring untouched code does nobody any good. You only improve what you're actively working on.
-
-### 3. Do Not Attempt a Massive Rewrite
-
-The "big redesign in the sky" almost never improves anything. Big rewrites fail because they attempt to replace a working (if ugly) system with an unproven one. The new system inevitably accumulates its own problems, and the old system keeps evolving while the rewrite is underway.
-
-### 4. Do Not Smear New Features Throughout the System
-
-When adding a new feature, the temptation is to write the code in a way consistent with how the legacy system is written — spreading it throughout the codebase. This makes the legacy problem worse, not better. Write new features in clean isolated modules instead.
-
----
-
-## The Boy Scout Principle
-
-The core strategy for dealing with legacy code is an attitude change: always check the code in cleaner than you checked it out. Every single time. Never check it in worse.
-
-### What One Act of Kindness Looks Like
-
-- Fix one bad coupling
-- Change one function name to reveal intent
-- Split one large function in two
-- Extract one duplicated block
-- Add one clarifying comment (only if code can't be made self-documenting)
-- Remove one dead code block
-
-Then check it in. Gently — don't try to fix a whole bunch of things at once. Don't dig in and tear it to shreds.
-
-### The Team Effect
-
-If everyone on the team follows this practice, the codebase gradually improves over time. But not ALL of it — only the volatile parts that are actively maintained. This is a feature, not a bug: you only improve what matters.
-
----
-
-## The Snowball Effect
-
-A virtuous cycle emerges from consistent application of the Boy Scout Principle:
-
-1. Legacy code was not designed to be testable
-2. At first, adding tests is impractical
-3. After a few acts of kindness, it suddenly becomes easier to add a unit test
-4. More tests make the system easier to clean
-5. Easier cleaning leads to more tests
-6. The pace of improvement accelerates
-
-This is the snowball effect. The volatile parts of the system get cleaner and cleaner, and easier and easier to work in. The key is patience — improvements are small at first, but they accumulate month after month.
-
----
-
-## The Strangulation Technique
-
-Over months or years, the cleaned volatile parts will completely surround some ugly, untested legacy code that hasn't been modified. Once that legacy code is completely surrounded by tested modules, you have an opportunity to safely rewrite or refactor it.
-
-The cleaner, tested code strangles the legacy code in the middle, allowing it to be rewritten and tested safely. This is the ONLY safe context for a rewrite: small scope, surrounded by tests, protected on all sides.
-
-**The progression:**
-```
-Phase 1: Legacy everywhere, no tests
-┌──────────────────────────┐
-│  Legacy  Legacy  Legacy  │
-│  Legacy  Legacy  Legacy  │
-│  Legacy  Legacy  Legacy  │
-└──────────────────────────┘
-
-Phase 2: Clean modules growing around the edges
-┌──────────────────────────┐
-│ [Clean] Legacy  [Clean]  │
-│  Legacy  Legacy  Legacy  │
-│ [Clean]  Legacy [Clean]  │
-└──────────────────────────┘
-
-Phase 3: Legacy code surrounded — safe to strangle
-┌──────────────────────────┐
-│ [Clean] [Clean] [Clean]  │
-│ [Clean] Legacy  [Clean]  │
-│ [Clean] [Clean] [Clean]  │
-└──────────────────────────┘
+# Look for CI config with test runs
+cat .github/workflows/* .gitlab-ci.yml .travis.yml 2>/dev/null | grep -E "test|coverage"
 ```
 
+**What to record:**
+- Tests exist: yes/no
+- Coverage percentage (if measurable)
+- Test type: unit, integration, acceptance, manual
+- Last test run date (from CI logs)
+
+### Code Age and Change Frequency
+
+```bash
+# See when this code was last modified
+git log --format="%ai" -- <file> | head -1
+
+# Count how many times it's been touched
+git log --oneline -- <file> | wc -l
+
+# See if it's stable (rare commits) or volatile (frequent commits)
+git log --oneline --all -- <file> | head -20
+```
+
+**Interpret:**
+- **Rarely touched + untested** → Don't improve unless you must touch it (Boy Scout only)
+- **Frequently touched + untested** → Highest priority for characterization tests
+- **Recently modified + untested** → Likely contains bugs; needs tests before further work
+- **Recently modified + tested** → Can refactor more aggressively with test safety net
+
+### Dependency Structure
+
+Check how tightly coupled the code is:
+
+```bash
+# Look for imports/requires pointing in and out
+grep -r "import.*LegacyModule" .
+grep -r "from legacy_module import" .
+
+# Count reverse dependencies
+grep -r "require.*legacy" . | wc -l
+```
+
+**What matters:**
+- Module has well-defined I/O boundaries → Candidate for characterization tests
+- Module is deeply coupled to many others → Extract via seam introduction first
+- Module is isolated → Easier to wrap with tests
+
+### Reason for Touch
+
+Determine the scope of the change:
+
+- **Bug fix** → Minimal touch required; ideal for one act of kindness
+- **New feature** → Consider clean module extraction
+- **Required refactoring** → Check if surrounded by tests (strangulation readiness)
+- **Performance improvement** → Needs characterization test to verify optimization doesn't break behavior
+
 ---
 
-## Adding New Features to Legacy Systems
+## Step 1: Classify the Situation
 
-### Wrong Way
+Use the decision tree to identify the primary risk and strategy:
 
-Smear the code for the new feature throughout the whole system in a way consistent with how the system is written. This perpetuates the legacy problem and makes the code worse.
+### Decision Rules
 
-### Right Way
+#### Rule 1: Test Coverage + Touch Frequency
 
-Write the new feature in its own module independently, using TDD and clean code principles. Make it a nice clean module, then tie it into the rest of the system at integration points.
+| Situation | Strategy | Urgency |
+|-----------|----------|---------|
+| Untested + frequently touched | Characterization test first | 🔴 High |
+| Untested + rarely touched | Boy Scout only when passing through | 🟢 Low |
+| Partially tested + being modified | Add tests for the lines you're changing | 🟡 Medium |
+| Well-tested + being modified | Refactor with confidence | 🟢 Low |
 
-This takes slightly longer but prevents the legacy problem from growing. Every new clean module is another piece of the strangulation strategy.
+#### Rule 2: Feature Addition
 
+| Situation | Strategy |
+|-----------|----------|
+| Adding feature to untested legacy | Extract to clean module first |
+| Adding feature to tested legacy | Can modify in-place with tests |
+| Adding feature to system under strangulation | Extend clean boundary, not legacy |
+
+#### Rule 3: Scope and Coupling
+
+| Situation | Action |
+|-----------|--------|
+| Module is isolated with clear I/O | Write characterization test immediately |
+| Module is tightly coupled to 5+ others | Introduce seam first, then characterization test |
+| Module is deeply nested with unclear boundaries | Boy Scout acts + refactor-suggestion before testing |
+
+---
+
+## Step 2: Apply Strategy Decision Rules
+
+Choose and execute one of these strategies for the current change.
+
+### Strategy 1: Boy Scout Act of Kindness
+
+**WHEN:** Every single code touch. No exceptions.
+
+**WHEN NOT:** Never skip this.
+
+**Execution:**
+1. Make your required change (bug fix, feature, refactoring)
+2. Perform exactly ONE act of kindness on the code you touched:
+   - Rename a variable or function to reveal intent
+   - Split one large function into two smaller ones
+   - Extract one duplicated block
+   - Remove one dead code block
+   - Fix one bad coupling (e.g., remove a global dependency)
+   - Add one clarifying comment (only if code can't be self-documenting)
+3. Do not attempt multiple acts in one checkin — gently, not aggressively
+4. Verify the act doesn't break behavior (if tests exist)
+5. Check in with a message: "Boy Scout: [specific act performed]"
+
+**Example (PHP):**
 ```
-// Wrong: new code smeared into legacy
-LegacyOrderProcessor:
-    processOrder(order):
-        ... 200 lines of legacy code ...
-        // NEW: loyalty points added inline
-        if order.customer.loyaltyTier == "gold":
-            points = order.total * 2
-        else:
-            points = order.total
-        loyaltyDb.addPoints(order.customer.id, points)
-        ... 100 more lines of legacy code ...
-
-// Right: new feature in clean module, integrated at boundary
-LoyaltyCalculator:  // new, clean, tested
-    calculatePoints(customer, orderTotal):
-        multiplier = loyaltyMultiplier(customer.tier)
-        return orderTotal * multiplier
-
-    loyaltyMultiplier(tier):
-        switch tier:
-            GOLD: return 2
-            SILVER: return 1.5
-            default: return 1
-
-// Integration — minimal touch to legacy code
-LegacyOrderProcessor:
-    processOrder(order):
-        ... legacy code unchanged ...
-        loyaltyCalculator.awardPoints(order.customer, order.total)
-        ... legacy code unchanged ...
+Commit message:
+  Fix: Customer lookup bug
+  Boy Scout: Renamed $c parameter to $customer in searchCustomer()
 ```
 
 ---
 
-## Characterization Tests
+### Strategy 2: Characterization Test
 
-Michael Feathers' technique for creating safety nets around legacy code.
+**WHEN:** Module has defined input/output boundaries AND you need to modify it safely.
 
-### When to Use
+**WHEN NOT:**
+- Module is too tightly coupled for isolation
+- Behavior is non-deterministic (unless you can normalize it)
+- Module has no clear I/O contract
 
-When you find a module with precisely defined outputs based on precisely defined inputs. Examples: a module that generates a report from data, a transaction processor with log output, an API endpoint with known request/response pairs.
+**Execution:**
+1. Identify a specific, isolated piece of legacy code (a function, API endpoint, batch processor)
+2. Capture its current output given a known input — this is your "golden standard"
+3. Save this output as a test file (not in code; use snapshot or fixture)
+4. Write a test that calls the legacy code with the known input and verifies the output matches golden standard
+5. Run the test — it should pass (you're capturing current behavior, not changing it)
+6. Now refactor the internals safely; rerun the test after each change
+7. When the test fails, either:
+   - You broke something → revert and refactor more carefully
+   - Behavior intentionally changed → regenerate the golden standard and update the test
+8. As code becomes more testable, migrate from characterization tests to proper unit tests
 
-### The Technique
-
-1. **Identify** a module with defined I/O boundaries
-2. **Capture** the current output given a known input — this is the "golden standard"
-3. **Save** this output as your characterization test
-4. **Refactor** the internals of the module
-5. **Regenerate** the output after each refactoring step
-6. **Compare** to the golden standard — if they match, nothing is broken
-7. **Continue** refactoring as long as the golden standard holds
-
-### Properties
-
-- **Fragile by nature**: Any new feature or intentional behavior change invalidates the golden standard
-- **Regeneration required**: When behavior intentionally changes, regenerate the golden standard
-- **Transitional**: As the system becomes more testable, replace characterization tests with proper unit tests
-- **Enables the snowball**: More testability leads to more unit tests, which enables more aggressive refactoring
-
-### Challenges with Non-Deterministic Systems
-
-For transaction-based systems, log files can serve as golden standards. But challenges include different thread ordering between runs, timestamp variations, and non-deterministic process scheduling. A comparison utility that eliminates irrelevant differences (timestamps, thread IDs) and focuses on relevant substance can make this approach viable.
-
----
-
-## Review Checklist
-
-When reviewing legacy code changes:
-
-**Boy Scout Rule:**
-- [ ] Code is cleaner than when you found it
-- [ ] At least one act of kindness performed
-- [ ] No code checked in worse than it was found
-
-**New Features:**
-- [ ] New features in clean isolated modules, not smeared throughout
-- [ ] New modules written with TDD
-- [ ] Integration at defined boundaries (minimal touch to legacy code)
-
-**Testing:**
-- [ ] Characterization tests exist where possible
-- [ ] Unit tests added wherever cleaning made it possible
-- [ ] Golden standards captured for modules with defined I/O
-
-**Strategy:**
-- [ ] No cleanup project initiated (incremental only)
-- [ ] No random refactoring hunt (only improving code being touched)
-- [ ] Strangulation opportunities identified if clean code now surrounds legacy
+**Checklist:**
+- 🔴 Golden standard captured accurately? (exact output, byte-for-byte if string-based)
+- 🔴 Test runs and passes initially? (before any refactoring)
+- 🟡 Comparison handles non-deterministic elements? (timestamps, thread IDs normalized)
+- 🟡 Test runs fast? (if slow, consider splitting into smaller characterization tests)
+- 🟢 Plan to replace with unit tests once code is cleaner?
 
 ---
 
-## Common Pitfalls
+### Strategy 3: Clean Module Extraction
 
-**Starting a cleanup project.** Projects fail; incremental improvement succeeds. Don't ask your boss for "cleanup time." Just make the code a little better every time you touch it.
+**WHEN:** Adding a new feature to legacy code.
 
-**Hunting for refactoring opportunities.** Only improve code you're actively touching. Refactoring untouched code helps nobody.
+**WHEN NOT:** Modifying existing behavior in legacy code (use Boy Scout + characterization test instead).
 
-**Attempting a massive rewrite.** The "big redesign in the sky" almost never works. Use the Strangulation technique instead.
+**Execution:**
+1. Design the new feature as a completely separate, clean module
+2. Write the new module using TDD (write test first, implement, refactor)
+3. The new module should have:
+   - Clear, single responsibility
+   - No dependencies on the messy legacy code
+   - Full test coverage
+   - Clean naming and structure
+4. Integrate the new module at a single boundary point in the legacy code
+5. Touch the legacy code minimally — ideally one or two lines
+6. Apply one Boy Scout act to the legacy code at the integration point
+7. Check in the new module and legacy changes together
 
-**Smearing new features.** Write clean modules, integrate at boundaries. Don't write new code in the style of the legacy code.
+**Example (PHP):**
+```php
+// Old way: feature smeared throughout
+class LegacyOrderProcessor {
+    public function processOrder(Order $order) {
+        // ... 300 lines of legacy code ...
+        if ($order->customer['loyaltyTier'] === 'GOLD') {
+            $points = $order->total * 2;
+        }
+        // ... 200 more lines ...
+    }
+}
 
-**Impatience.** It took years to create the mess. Cleaning takes time too. But the snowball effect means progress accelerates.
+// New way: clean module extracted
+class LoyaltyCalculator {  // new, clean, tested with TDD
+    public function calculatePoints(array $customer, float $orderTotal): int {
+        $multiplier = $this->loyaltyMultiplier($customer['tier']);
+        return (int)($orderTotal * $multiplier);
+    }
 
-**Giving up.** The early improvements feel small. Keep going. Month after month, they compound.
+    private function loyaltyMultiplier(string $tier): float {
+        return match ($tier) {
+            'GOLD' => 2.0,
+            'SILVER' => 1.5,
+            default => 1.0,
+        };
+    }
+}
+
+// Integration in legacy code: one line added
+class LegacyOrderProcessor {
+    private LoyaltyCalculator $calculator;
+
+    public function processOrder(Order $order) {
+        // ... legacy code unchanged ...
+        $this->calculator->calculatePoints($order->customer, $order->total);  // one line
+        // ... legacy code unchanged ...
+    }
+}
+```
+
+**Checklist:**
+- 🔴 New module written with TDD (test first)?
+- 🔴 New module has no dependencies on legacy code?
+- 🔴 Integration point is a single location?
+- 🟡 Legacy code touched minimally (1-2 lines)?
+- 🟡 One Boy Scout act performed in legacy integration point?
+- 🟢 New module has 80%+ test coverage?
+
+---
+
+### Strategy 4: Seam Introduction
+
+**WHEN:** Code is too tightly coupled to be tested, and you can't extract a clean module.
+
+**WHEN NOT:** You have time to do full refactoring.
+
+**Execution:**
+1. Identify the hard dependency (global, static method, hard-coded)
+2. Introduce a seam — a point where behavior can be substituted (parameter, subclass, dependency injection, interface)
+3. Give the seam a default value so existing code doesn't break
+4. Pass test double (mock/stub) through the seam in tests
+5. Write characterization tests using the seam
+
+**Example (Parameter Seam):**
+```php
+// Before: can't test without real DB
+public function saveOrder(Order $order): void {
+    $this->connection->insert('orders', $order->toArray());
+}
+
+// After: parameter seam with default
+public function saveOrder(Order $order, callable $storage = null): void {
+    $storage = $storage ?? fn($o) => $this->connection->insert('orders', $o->toArray());
+    $storage($order);
+}
+
+// Test can pass fake
+$fake = [];
+$processor->saveOrder($testOrder, fn($o) => $fake[] = $o);
+assert(count($fake) === 1);
+```
+
+---
+
+### Strategy 5: Anti-Pattern Guard
+
+**WHEN:** Someone proposes cleanup project, refactoring hunt, or massive rewrite.
+
+**Response template:**
+- **Cleanup project:** Decline. "Cleanup projects fail. We improve what we touch, incrementally, via Boy Scout acts."
+- **Refactoring hunt:** Decline. "Refactoring untouched code helps nobody. Only improve code you're actively modifying."
+- **Massive rewrite:** Decline. "Use strangulation instead — small, surrounded rewrites protected by characterization tests."
+- **Feature smeared into legacy:** Redirect. "Extract to clean module, integrate at one boundary point."
+
+---
+
+## Step 3: Execute Change + Act of Kindness
+
+### Execution Checklist
+
+1. **Understand the change** — What must be fixed/added? What tests exist?
+2. **Make the required change** — Implement fix/feature; verify existing tests pass
+3. **Perform ONE act of kindness** — Rename, split, extract, remove dead code, or fix coupling
+4. **Verify behavior unchanged** — Tests or manual verification; gently, not aggressively
+5. **Check in** — Commit message: `[Action]: [What]. Boy Scout: [specific act]`
+
+---
+
+## Step 4: Assess Strangulation Readiness
+
+After each change, check if clean code now surrounds untested legacy code.
+
+### Assessment Questions
+
+1. **Is there untested legacy code that hasn't been modified in months?**
+   - Yes → Go to question 2
+   - No → No strangulation opportunity yet
+
+2. **Is that legacy code now surrounded by clean, tested modules on multiple sides?**
+   - Yes → Go to question 3
+   - No → Continue incrementally improving the surrounding code
+
+3. **Can I rewrite this surrounded legacy code as a small, isolated unit?**
+   - Yes → Strangulation is ready. Plan a rewrite protected by tests.
+   - No → Identify which surrounding parts still need to be clean. Continue incrementally.
+
+### Strangulation Readiness Progression
+
+**Phase 1 (Legacy Everywhere):** No safety net. Improve volatile code touched frequently first.
+**Phase 2 (Clean Modules Growing):** Making progress. Keep surrounding untested code with tested modules.
+**Phase 3 (Legacy Surrounded):** READY. Safe to rewrite isolated legacy module with characterization test protection.
+
+### After Strangulation Identification
+
+If you identify surrounded legacy code:
+1. Do not rewrite it immediately
+2. Write characterization test for the surrounded code
+3. Plan a small, focused rewrite (not a big project)
+4. Execute the rewrite in small pieces, protected by characterization test
+5. After rewrite, replace characterization test with proper unit tests
+
+---
+
+## K-Line History
+
+Lessons from applying legacy code techniques.
+
+### ✓ What Works
+
+- **Boy Scout acts compound:** Small improvements accumulate month after month; codebase noticeably cleaner over time.
+- **Incremental beats big projects:** Teams improving incrementally succeed. Teams requesting "cleanup time" fail.
+- **Characterization tests enable confidence:** Once you can run code and verify output, refactoring speed increases dramatically.
+
+### ✗ What Fails
+
+- **Cleanup projects:** Always fail; teams lose morale and code gets worse.
+- **Refactoring hunts:** Waste effort on untouched code that will never be modified.
+- **Massive rewrites:** New system accumulates its own problems while old system evolves.
+
+---
+
+## When NOT to Apply
+
+| Situation | Alternative |
+|-----------|-------------|
+| Isolated module, never touched, untested | Boy Scout only when you must touch it |
+| Brand new greenfield feature | Use `/tdd` and `/solid` normally |
+| Code already well-tested and clean | Use standard refactoring |
+| Simple three-line bug fix | Boy Scout: one rename, done |
+| Full system rewrite planned | Plan strangulation path instead |
+
+---
+
+## Decision Tree Quick Reference
+
+```
+You need to touch legacy code.
+│
+├─ Is there an existing test?
+│  ├─ YES → Refactor with confidence using /refactor-suggestion
+│  └─ NO → Go next
+│
+├─ Is this a new feature?
+│  ├─ YES → Extract clean module, integrate at boundary
+│  └─ NO → Go next
+│
+├─ Does the code have clear I/O boundaries?
+│  ├─ YES → Write characterization test first
+│  └─ NO → Go next
+│
+├─ Is the code tightly coupled?
+│  ├─ YES → Introduce seam, then characterization test
+│  └─ NO → Go next
+│
+└─ Make your required change + Boy Scout act
+   └─ Check in, assess strangulation readiness
+```
 
 ---
 
 ## Related Skills
 
-- **/tdd** — Write new features test-first in clean modules
+- **/tdd** — Use for new features extracted from legacy code
 - **/refactor-suggestion** — Identify specific code smells and refactoring techniques
-- **/solid** — Apply SOLID principles to new code and incremental improvements
-- **/architecture** — Design clean module boundaries for new features
-- **/professional** — Professional responsibility to never check code in worse
+- **/solid** — Apply SOLID principles to new clean modules
+- **/architecture** — Design clean module boundaries for extraction
+- **/functions** — Break large legacy functions into smaller ones (Boy Scout)
+- **/naming** — Rename legacy variables and functions (Boy Scout)

@@ -2,208 +2,478 @@
 name: agile
 description: >-
   Guide Agile software development practices using Uncle Bob's teachings from the Clean
-  Code series. Activates when discussing Agile methodology, iteration planning, velocity,
-  estimation, continuous integration, or when the user mentions Agile, Scrum, XP, iteration,
-  sprint, velocity, planning game, Definition of Done, or professional expectations.
+  Code series. Operational procedure for assessing team maturity, diagnosing Agile health,
+  and fixing common anti-patterns. Activates when discussing Agile methodology, iteration planning,
+  velocity, estimation, continuous integration, Definition of Done, or when user mentions Scrum,
+  XP, sprint, velocity, planning game, or professional expectations.
+model: opus
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob
-argument-hint: [process or practice to analyze]
+delegates-to:
+  - tdd                 # technical practices foundation
+  - professional        # professional expectations
+  - acceptance-testing  # collaboration artifact
+  - clean-code-review   # quality verification
+argument-hint: [team context or practice to assess]
 ---
 
-# Agile Software Development
+# Agile Skill — Operational Procedure
 
-Agile practices through Uncle Bob's lens — technical excellence first, ceremonies second. Agile was created by programmers, not project managers, and its soul lives in engineering discipline.
-
-For detailed case studies and assessment walkthroughs, read `references/extended-examples.md`.
+Core principle: **Technical practices first, ceremonies second.** Agile was created by programmers, not project managers. Its soul lives in engineering discipline — TDD, CI, refactoring. Without these, all ceremonies are theater.
 
 ---
 
-## What Agile Really Is
+## Step 0: Detect Context
 
-Agile was born at Snowbird, Utah in February 2001 when 17 software practitioners — programmers and technical leaders, not project managers — created the Agile Manifesto. It was a statement of values by people who had discovered that certain disciplines produced better software.
+Before assessing or recommending, detect the team's current state:
 
-The technical practices (TDD, refactoring, simple design, pair programming, continuous integration) are what actually make Agile work. The ceremonies (standups, sprints, retrospectives) are coordination tools — useful, but not the point.
+### Methodology
+- **Current framework:** Scrum, Kanban, XP, Lean, hybrid, or ad-hoc?
+- **Iteration length:** If using iterations, how long? (1 week, 2 weeks, continuous flow?)
+- **Cadence:** Do ceremonies happen on a predictable schedule?
 
-### The Agile Manifesto Values (Applied)
+### Technical Practices
+- **TDD:** Are developers writing tests before code? What percentage of code has unit test coverage?
+- **CI/CD:** Is the build automated? Do developers commit at least daily? Is the main branch always deployable?
+- **Code review:** Pair programming, pull request review, or no review?
+- **Refactoring:** Is refactoring part of every task, or deferred to "tech debt sprints"?
+- **Deployment:** How often does code reach production? (hourly, daily, weekly, quarterly?)
 
-**Individuals and Interactions over Processes and Tools.** The technical practices matter more than the ceremonies. A disciplined team with minimal process outperforms a mediocre team with perfect ceremony. Tools serve people, not the reverse.
+### Iteration Health
+- **Velocity tracking:** Is velocity measured? Is it stable or declining?
+- **Velocity gaming:** Are estimates inflated? Are partially-done stories counted as complete?
+- **Definition of Done:** Does the team have a written Definition of Done? Is it enforced?
+- **Cycle time:** How long from "in progress" to "done"? (Hours, days, weeks?)
 
-**Working Software over Comprehensive Documentation.** Tested, integrated, deployable software is the measure of progress. Not "demonstrated." Not "mostly works." Deployed and running. Tests are the best low-level documentation.
+### Ceremonies
+- **Planning:** How long do planning meetings take? Is scope negotiated or predetermined?
+- **Standup:** 5-15 minutes or 30+ minutes? Status reports or problem-solving?
+- **Demo:** Only truly done stories shown, or half-finished work?
+- **Retrospective:** Are action items identified? Are they followed up in next iteration?
 
-**Customer Collaboration over Contract Negotiation.** Acceptance tests are the collaboration artifact. The customer defines "done" through acceptance criteria. The Planning Game is the collaboration mechanism — negotiating scope within iterations replaces contract renegotiation.
+### Pain Points
+- **What is the team complaining about?**
+  - Velocity declining?
+  - Unpredictable releases?
+  - Too many bugs in production?
+  - Changes are risky and slow?
+  - Can't hire or retain developers?
+  - Manager pressure to do more with less?
 
-**Responding to Change over Following a Plan.** Variable scope within fixed iterations is how you respond to change. Clean code and SOLID principles make change inexpensive. If changing a requirement requires modifying dozens of files, the design has failed — and Agile without clean code makes change increasingly expensive.
+---
 
-### The Iron Triangle
+## Step 1: Diagnose Agile Health
+
+Rate each category. Use the assessment to identify root causes, not to shame the team.
+
+### Technical Practices Assessment
+
+| Practice | Status | Evidence (PHP/TypeScript) | Severity if Missing |
+|----------|--------|----------|-------------------|
+| Unit tests exist | ☐ Yes ☐ No ☐ Partial | `tests/` directories populated (PHP), `*.test.ts` files exist (TypeScript), >50% coverage | 🔴 Critical |
+| TDD as workflow | ☐ Yes ☐ No ☐ Partial | Developers write tests before code; use `./vendor/bin/phpunit` / `npm test` in dev loop | 🔴 Critical |
+| CI/CD automated | ☐ Yes ☐ No ☐ Partial | GitHub Actions/pipeline runs `./vendor/bin/phpunit` and `npm run build` on every commit | 🔴 Critical |
+| Main branch stable | ☐ Yes ☐ No ☐ Partial | Failed test or build blocks merges; fixed within hours | 🟡 High |
+| Code review mandatory | ☐ Yes ☐ No ☐ Partial | Every commit reviewed before merge (pair or PR) | 🟡 High |
+| Refactoring continuous | ☐ Yes ☐ No ☐ Partial | Refactoring happens as part of tasks; tests enable safe changes | 🟡 High |
+| Daily commits | ☐ Yes ☐ No ☐ Partial | Developers integrate at least once per day | 🟢 Medium |
+
+**RED flags (all critical):**
+- No automated tests
+- No CI/CD pipeline
+- Build breaks are tolerated for days
+- Code review is skipped under "time pressure"
+
+### Ceremony Quality Assessment
+
+| Ceremony | Status | Questions |
+|----------|--------|-----------|
+| Planning | ☐ Valuable ☐ Theater ☐ None | Do stories have clear acceptance criteria? Is scope negotiable? Does team commit based on velocity? |
+| Standup | ☐ Valuable ☐ Theater ☐ None | Blocked immediately surfaced and solved? Or is it a status report? |
+| Demo | ☐ Valuable ☐ Theater ☐ None | Only done stories shown? Do stakeholders give feedback? |
+| Retro | ☐ Valuable ☐ Theater ☐ None | Action items identified and tracked? Changes made next iteration? |
+
+### Velocity Integrity Assessment
+
+| Question | Status |
+|----------|--------|
+| Is velocity measured consistently? | ☐ Yes ☐ No ☐ Inconsistent |
+| Are only truly done stories counted? | ☐ Yes ☐ No ☐ Sometimes |
+| Is velocity stable or trending? | ☐ Stable ☐ Declining ☐ Erratic |
+| Are estimates adjusted after completion to look better? | ☐ Never ☐ Rarely ☐ Often |
+| Is velocity used for planning only, not evaluation? | ☐ Yes ☐ No |
+
+**RED flag:** Velocity gaming. If estimates are adjusted backward or partial stories are counted, velocity is fiction.
+
+### Definition of Done Assessment
+
+Ask: **"Is a story truly done when all of these are true?"**
+
+1. ☐ All acceptance tests pass (integration tests or service-level tests)
+2. ☐ All unit tests pass (PHPUnit for PHP, Jest for TypeScript)
+3. ☐ Code has been reviewed (pair programming or PR review)
+4. ☐ Code meets clean code standards (readable, no obvious tech debt; passes linting and type checks)
+5. ☐ Code integrated into main branch (not sitting in a feature branch)
+6. ☐ No known defects (QA found nothing or issues logged for next iteration)
+7. ☐ System is deployable (`npm run build` succeeds, type checks pass, tests pass)
+
+**Count:**
+- 7/7 = Solid
+- 5-6/7 = Gaps exist; find which ones are causing problems
+- <5/7 = Definition of Done is broken; velocity is unreliable
+
+---
+
+## Step 2: Apply Decision Rules
+
+### Rule 1: Technical Practices First
+
+**WHEN:** Assessing any Agile process. Ceremonies are useless without engineering discipline.
+
+**WHEN NOT:** Never skip this assessment.
+
+**CHECK:**
+1. Does TDD exist? If no, it's the blocker. Inject TDD first (delegate to `/tdd`).
+2. Does CI/CD exist? If no, it's the second blocker. Set up automated build and deploy.
+3. Is code review happening? If no, establish pair programming or PR reviews.
+4. Is refactoring part of the workflow? If no, teach developers refactoring discipline (delegate to `/refactor-suggestion`).
+
+**ACTION:** If technical practices are missing, no Agile framework will work. Start here.
+
+---
+
+### Rule 2: Definition of Done Completeness
+
+**WHEN:** Reviewing any "done" claim. Planning next iteration. Velocity seems suspicious.
+
+**WHEN NOT:** Pure research/spike tasks (those are explicitly "not done" by definition).
+
+**CHECK:** Apply the 7-point checklist above. Each missing point is corruption:
+- No tests → Velocity lies
+- No review → Defects in production
+- Not integrated → Merge conflicts pile up
+- Not deployable → Hardening sprint needed (Definition of Done is broken)
+
+**ACTION:**
+1. Write the 7-point checklist on a card and post it
+2. In retrospective, ask: "Which items do we always skip?"
+3. Prioritize fixing the most-skipped item first
+4. Enforce it strictly for one full iteration
+
+---
+
+### Rule 3: Velocity Integrity
+
+**WHEN:** Planning next iteration. Investigating why velocity declined. Responding to management pressure.
+
+**WHEN NOT:** First 2-3 iterations (insufficient data). Team composition just changed significantly.
+
+**CHECK:**
+1. Are estimates adjusted after completion? If yes, velocity is fiction.
+2. Are partially-done stories counted as complete? If yes, velocity is fiction.
+3. Is velocity stable or declining? Declining = accumulating technical debt.
+4. Is velocity used for performance evaluation? If yes, it's gamed. Use it for planning only.
+
+**CALCULATION (Yesterday's Weather):**
+```
+next_iteration_velocity = average(last_3_to_5_iterations_actual_velocity)
+```
+**Not** best-case. **Not** management-desired. **Actual.**
+
+**ACTION:**
+1. Count only truly done stories for 3 iterations to establish baseline
+2. Refuse to use velocity for performance evaluation
+3. If velocity is declining, diagnose technical debt (delegate to `/refactor-suggestion`)
+
+---
+
+### Rule 4: Iteration Scope — Variable Scope, Fixed Time
+
+**WHEN:** Facing scope pressure or deadline pressure. Starting iteration planning.
+
+**WHEN NOT:** Critical deadline with fixed scope (be honest about what won't fit, delegate to `/professional`).
+
+**THE IRON TRIANGLE:**
+```
+You cannot fix all three:
+  Scope — Schedule — Resources
+Pick two. Agile picks Scope and Schedule (flexible Scope, fixed Schedule).
+```
+
+**DECISION:**
+- **Fixed iteration length** (1-2 weeks) ← Never negotiate
+- **Variable scope** (stories that fit yesterday's velocity) ← Always negotiate
+- **Resources** (team size) ← Adjust if possible, but adding people often slows you down
+
+**ACTION:**
+1. If manager says "we need feature X, Y, Z in 2 weeks": calculate velocity, show what fits, ask which features to defer
+2. If team says "we can do more": remind them velocity is measured, not promised
+3. Never extend iteration length to "fit in" more scope
+
+---
+
+### Rule 5: Estimation — PERT or Reference Comparison
+
+**WHEN:** Estimating any story or task.
+
+**WHEN NOT:** Trivial tasks (<1 hour). Pure research (estimate as "unknown").
+
+**PERT ESTIMATION:**
+For each story, provide three points:
+- **Best (B):** Everything goes right, 1% chance of being this fast
+- **Normal (N):** Realistic expectation, 50% chance
+- **Worst (W):** Murphy's Law, 99% chance done by this time
 
 ```
-        Scope
-       /     \
-      /       \
-     /  Pick   \
-    /   Two     \
-   /             \
-  Schedule --- Resources
+Expected = ((B + W) / 2 + N) / 3
+Std Dev  = (W - B) / 6
 ```
 
-You cannot fix all three. Agile makes SCOPE the flexible variable — fixed iterations with variable scope. Management often tries to fix all three, which guarantees failure.
+**REFERENCE COMPARISON:**
+If PERT feels too heavyweight, compare to stories already completed:
+- "This is like story #23 (5 points) but with more edge cases, so 8 points"
+- Relative sizing is more reliable than absolute estimates
+
+**ACTION:**
+1. Show team the PERT formula, let them choose (PERT or reference)
+2. Collect estimates from multiple people, discuss outliers
+3. Always provide ranges, never single-point estimates to management
 
 ---
 
-## The Planning Game
+### Rule 6: Iteration Rhythm — Synchronization, Not Status Reports
 
-### Story Estimation
+**WHEN:** Designing or fixing ceremonies.
 
-Stories are estimated using relative sizing (story points) — gut-feel comparisons, not precise commitments. "Is this bigger or smaller than that?" The law of large numbers means individual inaccuracies average out over many stories. Relative sizing is more reliable than absolute time estimates.
+**WHEN NOT:** Never skip ceremonies; instead, make them valuable.
 
-### Velocity
+**THE RHYTHM:**
 
-Velocity is the number of story points actually completed per iteration. It is the most important Agile metric — and the most commonly corrupted.
+| Ceremony | Duration | Purpose | Output |
+|----------|----------|---------|--------|
+| **Planning** (start) | 30-60 min | Prioritize backlog, estimate unknowns, team commits | Stories with criteria, commitment |
+| **Standup** (daily) | 5-15 min | "What will I do? What blocked me?" Solve offline. | Blockers surfaced, problems solved |
+| **Development** (all week) | — | TDD, CI, code review, refactoring, acceptance tests | Shippable software |
+| **Demo** (end) | 30-45 min | Show DONE stories to stakeholders | Feedback for next iteration |
+| **Retro** (end) | 30-45 min | "What went well? What could improve? One action item." | Committed improvements |
 
-**The rules are non-negotiable:**
-- Only count stories that meet the FULL Definition of Done
-- Never count partially-completed stories
-- Never inflate point estimates to look better
-- Use velocity for PLANNING, never for performance evaluation
-- Track trends — declining velocity signals accumulating technical debt
+**ANTI-PATTERNS:**
+- **Standup Theater:** 30-minute status reports → should be 5 minutes
+- **Planning Marathon:** 4-hour planning session → should be 1 hour, just-in-time details
+- **Demo of Half-Done Work:** → only show truly done stories
+- **Retro Without Action:** Complaints but no follow-through → identify ONE concrete change
 
-**Yesterday's Weather:** The best predictor of next iteration's velocity is last iteration's velocity. Use the average of the last 3-5 iterations. Not best-case. Not management-desired. ACTUAL.
-
-### Planning Meetings
-
-Keep them short — focus on prioritization and rough sizing. Product owner presents highest-priority stories, team estimates relative to each other, team commits to what they believe they can complete based on yesterday's weather. Write detailed acceptance criteria just-in-time when a story is picked up. Do not plan more than one iteration ahead in detail.
-
----
-
-## Definition of Done
-
-A story is DONE when ALL of the following are true:
-
-1. All acceptance tests pass
-2. All unit tests pass
-3. Code has been reviewed (pair programming or code review)
-4. Code meets clean code standards
-5. Code has been integrated into the main branch
-6. No known defects remain
-7. System is deployable with this change included
-
-"Done" means done. Not sort-of done. Not almost done. Not "works on my machine." Every story that passes through "done" without truly being done is a lie told to the planning process — it corrupts velocity, creates hidden debt, and destroys planning reliability.
-
-**Common failures:** "Done" means written but not tested. "Done" means works locally but not integrated. "Done" means demonstrated but not deployable. Each corrupts velocity and makes future planning impossible.
+**ACTION:** If a ceremony takes >budget, it's broken. Fix it in retrospective.
 
 ---
 
-## Continuous Integration
+### Rule 7: Anti-Pattern Detection & Recovery
 
-Integrate frequently — at LEAST daily, preferably continuously. The build must never be broken. If it breaks, fixing it is the team's top priority.
+**WHEN:** Team shows symptoms. Velocity declining. Bugs increasing. Morale dropping.
 
-**What CI requires:**
-- Automated build: one command builds the entire system
-- Automated tests: unit and integration tests run on every commit
-- Fast feedback: developers know within minutes if something broke
-- Main branch always green: the system is always deployable
-- Frequent commits: small, frequent integrations reduce merge conflicts
+**WHEN NOT:** Never use anti-patterns to shame; use them to diagnose.
 
-The goal: deploying is so safe and routine that you would do it at any time. This requires comprehensive test coverage, TDD as standard practice, and an automated deployment pipeline. No "hardening sprints." No "code freeze." If you need those, your Definition of Done is broken.
+**IDENTIFY THE ANTI-PATTERN:**
 
----
-
-## Iteration Structure
-
-### Fixed-Length Iterations
-
-1-2 weeks is typical (shorter is better). Each iteration produces shippable software. The iteration length is fixed — scope varies to fit. Consistency enables reliable velocity measurement.
-
-### Iteration Rhythm
-
-**Planning (start):** Select stories from backlog by priority, estimate unestimated stories, team commits based on yesterday's weather.
-
-**Daily Standup:** Brief synchronization — not a status report. What did I do? What will I do? What's blocking me? 5-15 minutes maximum. Take problem-solving offline.
-
-**Development (throughout):** TDD for all new code, continuous integration, pair programming or code review, refactoring as part of every task, acceptance tests alongside development.
-
-**Demo (end):** Show working software to stakeholders. Only demonstrate truly done stories. Collect feedback for future iterations.
-
-**Retrospective (end):** Inspect and adapt. What went well? What could improve? Identify one or two concrete, actionable improvements. Not a blame session.
+| Anti-Pattern | Symptoms | Fix |
+|--------------|----------|-----|
+| **Flaccid Scrum** | Ceremonies yes, practices no. Velocity collapses. | Enforce 7-point DoD. Inject TDD. Set up CI/CD. |
+| **PM Takeover** | Ceremonies but waterfall planning. Team estimates ignored. | Restore team ownership of pace. Educate on TDD. |
+| **Velocity Gaming** | Inflated estimates. Partial stories counted as done. | Count only truly done stories. Never use velocity for evaluation. |
+| **Hardening Sprint** | Dev sprint + separate QA sprint. Bugs pile up. | Add "deployable" to DoD. QA in every sprint, not after. |
+| **Sprint Zero** | Months of planning before first delivery. | Deliver in iteration one. Architecture emerges iteratively. |
+| **Standup Theater** | 30-60 minute status reports. Management attends. | 5-15 minutes. Blockers only. Keep managers out. |
+| **Certification Illusion** | Playbook-following without discipline. | Real learning: pair, read Clean Code, do `/tdd` properly. |
 
 ---
 
-## Professional Expectations
+## Step 3: Review Checklist — Agile Health Scan
 
-Agile frames these as expectations that customers and managers have every right to demand:
+**Run this checklist on a team to identify quick wins and critical gaps.**
 
-### Quality
+### Technical Practices (Foundation)
+- 🔴 **TDD in place:** Are >50% of stories tested first (PHPUnit or Jest)? Or are tests an afterthought?
+- 🔴 **CI/CD automated:** Can you deploy without manual steps? Does `./vendor/bin/phpunit` and `npm run build` run on every commit? Is main always green?
+- 🔴 **Code review mandatory:** Does every commit get eyes before merge?
+- 🟡 **Refactoring continuous:** Is refactoring part of stories, or deferred?
 
-QA should find nothing. That should be the goal every iteration. Bug tracking systems are an admission that defects are too numerous to track manually. The professional goal: a bug count low enough to track on a sticky note.
+### Definition of Done (Velocity Reliability)
+- 🔴 **All 7 points defined and enforced:** Tests, review, integration, deployment-ready?
+- 🔴 **No partial stories counted:** Only fully done stories in velocity calculation?
+- 🟡 **No hardening sprints:** Every iteration produces deployable software?
 
-### Continuous Readiness
+### Velocity (Planning Accuracy)
+- 🔴 **Velocity measured honestly:** Inflated estimates? Undone stories? Trend declining?
+- 🟡 **Yesterday's Weather used:** Planning based on actual past velocity, not wishes?
+- 🟡 **Not used for evaluation:** Velocity a planning tool, not a judgment tool?
 
-The system should be deployable at any time. Not after the hardening sprint. Not after the stabilization phase. At any time. TDD provides the test suite. CI keeps the system deployable.
+### Ceremonies (Value Delivered)
+- 🟡 **Planning <1 hour:** Or does it drag on into planning marathons?
+- 🟡 **Standup <15 minutes:** Or is it status reports?
+- 🟢 **Demo shows only done work:** Or half-finished features?
+- 🟢 **Retro has follow-through:** Or are complaints logged and forgotten?
 
-### Stable Productivity
+### Professional Expectations (Sustainable Pace)
+- 🟢 **Honest estimates:** Or are dates promised without certainty?
+- 🟢 **No crunch mode:** Or is overtime normalized?
+- 🟢 **Continuous readiness:** Or are releases chaotic?
 
-Adding features should not get progressively more expensive. The cost of the 100th feature should be similar to the 10th. If each iteration delivers less, something is wrong — almost always technical debt. Clean code is the only way to maintain velocity over time.
-
-### Inexpensive Adaptability
-
-Customers have the right to change requirements without paying through the nose. That is the entire point of "soft" in software. Simple designs and SOLID principles keep changes local. If a requirement change cascades through dozens of files, the design has failed.
-
-### Fearless Competence
-
-With a trusted test suite: see mess, clean it, run tests, green, move on. Code gets better with every touch. Without tests: see mess, avoid it, code rots, everyone slows down, fear breeds more fear. TDD is what separates fearless competence from fearful incompetence.
-
-### Honest Estimates
-
-Never promise what you cannot deliver. Use ranges, not point estimates. Say "I don't know" when you don't know. Estimates are probability distributions, not commitments. Management deserves honest forecasts, not comfortable lies.
-
-### Cover for Each Other
-
-No single points of knowledge failure. Share code ownership — no one "owns" a module exclusively. If only one person understands a critical system, the team has a bus-factor problem. Pair programming, code review, and knowledge sharing are professional responsibilities.
+**Severity:**
+- 🔴 **RED:** Blocks everything. Fix first.
+- 🟡 **YELLOW:** Limits velocity or quality. Fix in next iteration.
+- 🟢 **GREEN:** Nice to have. Improve gradually.
 
 ---
 
-## How Agile Goes Wrong
+## Step 4: Fix Patterns — Refactoring Agile
 
-### Flaccid Scrum
+### Pattern 1: Inject Technical Practices
 
-The most common corruption. Ceremonies without technical practices — standups and sprints without TDD, refactoring, or CI. The pattern is predictable: early iterations show high velocity (easy features, no debt), team counts partially-done stories to maintain numbers, debt accumulates silently, velocity begins to decline, management pressure increases, quality corners are cut further, system becomes progressively harder to change, productivity collapses.
+**When:** No TDD, no CI, or code review missing.
 
-### Project Management Takeover
+**Order (spend one iteration per step):**
+1. **CI/CD first** — Automated build on every commit. `./vendor/bin/phpunit` and `npm run build` in pipeline. Main branch always green.
+2. **TDD second** — New code tested first. Retrofit old code with characterization tests. Pair experienced dev with skeptic.
+3. **Code review third** — Pair programming or PR review. Every commit reviewed before merge.
+4. **Refactoring fourth** — Refactoring part of every story. Tests enable safe changes.
 
-Agile was created by technical people. When project managers adopted it, they kept the ceremonies and dropped the engineering practices. They understood iterations and burndown charts but not TDD or refactoring. Keeping the dashboard and discarding the engine.
+**Action:** Pick one, spend one iteration making it real, measure improvement.
 
-### Certification Illusion
+---
 
-Two-day certification courses create the illusion of competence. They teach ceremonies and vocabulary, not the deep technical discipline that makes Agile work. Thousands of "Scrum Masters" can facilitate a standup but cannot explain why TDD matters.
+### Pattern 2: Fix Definition of Done
 
-### Velocity Gaming
+**When:** Velocity unreliable, bugs in production, or partial stories getting counted.
 
-Inflating story points, counting undone stories, adjusting estimates after the fact — all to make velocity numbers look better. Every instance destroys planning reliability. When velocity is a lie, planning is impossible.
+**The 7-point checklist:**
+```
+Done means ALL of these:
+1. Acceptance tests pass | 2. Unit tests pass | 3. Code reviewed
+4. Clean code standards | 5. Integrated into main | 6. No known defects
+7. System deployable
+```
 
-### Scaling Through Bureaucracy
+**Steps:**
+1. Post the checklist visibly (wall, workflow tool)
+2. Audit: Which items do teams skip? Which cause most bugs?
+3. Enforce for one iteration: Stories don't move to done until all 7 pass
+4. In retro: "Which item helped most? Which was hardest?" Adjust, but maintain rigor
 
-Large-scale frameworks (SAFe, LeSS, etc.) attempt to scale Agile through layers of coordination meetings and management overhead. Agile was designed for small teams. You build large systems the way we have always built large things — by building lots of small things with small teams.
+**Result:** Velocity becomes reliable. Bugs decrease. Deployment predictable.
 
-### Abandoning Technical Practices
+---
 
-Teams drop TDD because it "slows them down." They skip refactoring because there's "no time." These are the practices that make Agile sustainable. Without TDD, no safety net for refactoring. Without refactoring, code degrades. Without clean code, velocity collapses. The death spiral accelerates.
+### Pattern 3: Restore Velocity Integrity
 
-### Anti-Pattern Ceremonies
+**When:** Velocity is inflated, declining, or gamed.
 
-**Hardening Sprints:** If you need a sprint to fix bugs and stabilize, your Definition of Done is broken. Every iteration should produce shippable software.
+**Steps:**
+1. **Reset 3 iterations:** Count only truly done stories. Expect drop (you're being honest). Ignore old numbers.
+2. **Track trend:**
+   ```
+   Iteration 1: 20 points (honest count, tests passing)
+   Iteration 2: 22 points (stabilizing)
+   Iteration 3: 21 points (average = 21, use for planning)
+   ```
+3. **If declining:** Technical debt accumulating. Allocate 20% of capacity to refactoring.
+4. **Never use velocity for evaluation:** Removes incentive to game. Planning only.
 
-**Sprint Zero:** Extensive upfront planning before the first "real" sprint. Start delivering from iteration one. Architecture emerges iteratively.
+**Result:** Reliable forecasting tool.
 
-**Standup Theater:** Daily standups that become long status reports or management checkpoints instead of brief team synchronization.
+---
+
+### Pattern 4: Convert Ceremonies to Substance
+
+**When:** Standup is 30 minutes, planning is a marathon, retro is complaining.
+
+| Ceremony | Fix |
+|----------|-----|
+| **Standup** | 5-15 min, hard stop. "What will I do? What's blocking?" Blockers resolved offline. No managers. |
+| **Planning** | 30-60 min. Prioritize, estimate, team commits based on yesterday's velocity. Criteria written when picked up. |
+| **Demo** | Show only done work. Stakeholder feedback shapes next iteration. |
+| **Retro** | Three questions: went well? improve? one concrete change? Track it next iteration. |
+
+---
+
+### Pattern 5: Descale — Return Autonomy to Teams
+
+**When:** Too many layers of coordination. Story can't start without BA meeting. Code can't merge without architectural council. Deployment needs PM sign-off.
+
+**Fix:** Small autonomous teams (5-9) make decisions. Own estimation, DoD, velocity. Commit to iteration, not managers. Managers set constraints (security, compliance), teams figure out how.
+
+**Result:** Faster feedback, faster decisions, higher morale.
+
+---
+
+### Pattern 6: Kill Hardening Sprint
+
+**When:** Dev sprint + separate stabilization sprint. Bugs pile up.
+
+**Fix:**
+1. Add "System is deployable" to Definition of Done
+2. QA in every sprint, not after
+3. Acceptance tests with stories, not in separate phase
+4. Deploy from every sprint; if you can't, DoD is broken
+
+**Result:** No hardening sprint. Quality improves because bugs caught earlier.
+
+---
+
+## When NOT to Apply
+
+1. **Fixed scope + deadline + resources.** Agile needs flexibility in one. Be honest (delegate to `/professional`).
+2. **Single-person team.** Use simple task board. Still apply TDD, CI.
+3. **Non-software.** Hardware, construction don't iterate fast. Borrow mindset, not ceremonies.
+4. **Compliance-heavy.** Layer in audit trail and docs. Don't drop Agile.
+
+**Red flags:** No technical discipline (unwilling). Manager treats Agile as faster waterfall. Team burned out (needs rest, not Agile). Organization plays politics (Agile exposes it).
+
+---
+
+## Communication Style
+
+### When Diagnosing
+- **Not:** "Your team is doing Scrum wrong"
+- **Yes:** "Your Definition of Done is missing integration tests. That's why bugs reach production. Let's fix that."
+
+### When Recommending
+- **Not:** "Agile best practice says..."
+- **Yes:** "Your velocity is declining because technical debt is slowing you down. Adding TDD and refactoring time will fix it."
+
+### When Pushing Back
+- **Not:** "Agile doesn't allow hardening sprints"
+- **Yes:** "Every day you spend in hardening is a day you're not delivering value. Let's fix Definition of Done so you don't need hardening."
+
+### To Managers
+- **Not:** "Agile requires you to let go"
+- **Yes:** "Agile gives you visibility into actual capacity and honest forecasts. You can plan better because we're not lying about velocity."
+
+---
+
+## K-Line History
+
+**TDD:** Reduces defects. Only safe way to refactor.
+
+**CI/CD:** Painless integration. Reduces surprises.
+
+**Definition of Done:** Without it, velocity is fiction. Planning is guessing.
+
+**Velocity (honest):** The only reliable forecast. Gaming destroys it.
+
+**Ceremonies:** Valuable when they surface blockers, not status reports.
+
+**Fixed short iteration:** Enables accurate velocity.
+
+**Autonomous teams:** Better, faster decisions. Fewer coordination layers.
 
 ---
 
 ## Related Skills
 
-- **/tdd** — Enables fearless competence and honest velocity
-- **/professional** — Professional expectations Agile demands
-- **/architecture** — Enables inexpensive adaptability
-- **/solid** — Keeps designs simple and changeable
-- **/components** — Independent deployability
-- **/acceptance-testing** — Collaboration artifact with customers
+- **/tdd** — Enables fearless competence, honest velocity, and clean code
+- **/professional** — Professional expectations Agile demands of developers
+- **/acceptance-testing** — Collaboration artifact with customers, ATDD
 - **/clean-code-review** — Quality verification before marking done
+- **/refactor-suggestion** — Diagnosing and fixing technical debt
 - **/legacy-code** — Boy Scout Rule for continuous improvement
+- **/solid** — Keeps designs simple and changeable
+- **/architecture** — Enables inexpensive adaptability across iterations

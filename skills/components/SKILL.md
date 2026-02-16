@@ -1,260 +1,128 @@
 ---
 name: components
 description: >-
-  Guide component design and structure - cohesion, coupling, and dependencies.
-  Activates when designing module boundaries, organizing packages, reviewing
-  component dependencies, or when the user mentions cohesion, coupling, module
-  design, package structure, or component dependencies.
-allowed-tools: Read, Grep, Glob
-argument-hint: [code, module, or package to analyze]
+  Module boundaries, package organization, monorepo structure, dependency management,
+  composer/npm/pip/cargo package design. Activate when defining package structure,
+  managing coupling across module boundaries, or when the user mentions monorepo,
+  package.json, composer.json, coupling, cohesion, circular dependency, or module design.
+model: opus
+allowed-tools: [bash, read, grep, write]
+delegates-to: [architecture, solid]
+argument-hint: "[--detect-only] [--stack=npm|python|rust|go] [--show-metrics]"
 ---
 
-# Component Principles
+## Step 0: Detect Context
 
-Follow this workflow when analyzing component structure, reviewing dependencies, or designing module boundaries using Uncle Bob's component principles.
+Identify your component model and dependency tooling:
 
-For extended examples (real-world component redesigns, metric calculations, cycle-breaking walkthroughs), read `references/extended-examples.md`.
+```bash
+# Composer (PHP): list package boundaries
+find . -name "composer.json" -not -path "*/vendor/*" | head -20
 
-## Workflow Steps
+# npm (TypeScript): list package boundaries
+find . -name "package.json" -not -path "*/node_modules/*" | head -20
 
-1. **Apply REP** — Ensure classes grouped together are releasable together
-2. **Apply CCP** — Gather classes that change for the same reasons
-3. **Apply CRP** — Don't force users to depend on things they don't need
-4. **Balance the Tension Triangle** — Find the right balance based on project maturity
-5. **Ensure ADP** — Verify no cycles in the component dependency graph
-6. **Follow SDP** — Dependencies must point toward stability
-7. **Follow SAP** — Stable components should be abstract
-8. **Apply /professional workflow** — Ensure quality standards are met
-
----
-
-## What is a Component?
-
-A component is the unit of deployment — the smallest entity that can be deployed as part of a system. Every language has its own packaging mechanism (packages, modules, libraries, assemblies), but the principles are universal. A component groups related code that is released, versioned, and deployed together.
-
----
-
-## Component Cohesion Principles
-
-These principles help decide what goes *inside* a component.
-
-### REP: Reuse/Release Equivalence Principle
-
-**"The granule of reuse is the granule of release."**
-
-Classes and modules grouped into a component must be releasable together. If you reuse one class from a component, you implicitly depend on all classes in that component. They should all share the same version and release cycle.
-
-**Implication:** Don't put unrelated classes together just because they're small. Users will be forced to track releases for things they don't use.
-
-**Signs of violation:**
-- Component contains unrelated classes that serve different purposes
-- Users only want part of the component
-- Version changes affect functionality unrelated to what users actually use
-
-### CCP: Common Closure Principle
-
-**"Gather together those things that change at the same times and for the same reasons. Separate those things that change at different times or for different reasons."**
-
-This is SRP applied to components. A component should not have multiple reasons to change.
-
-**Why it matters:** When a requirement changes, you want that change confined to the fewest components possible. If Order and OrderValidator always change together, they belong in the same component. If they change independently, separate them.
-
-**Signs of violation:**
-- A single business change requires modifying multiple components
-- Unrelated changes bundled in one component release
-- High coupling between components that should be independent
-
-### CRP: Common Reuse Principle
-
-**"Don't force users of a component to depend on things they don't need."**
-
-This is ISP applied to components. When you depend on a component, you depend on the *entire* component — every class in it. If ANY class changes, your component may need to be revalidated and redeployed.
-
-**Solution:** Keep components focused. If a group of classes are not tightly bound together — if they are not reused together — they should not be in the same component.
-
-**Signs of violation:**
-- Users import a component but only use a fraction of it
-- Changes to unused classes force recompilation or redeployment
-- Component has multiple unrelated "features"
-
----
-
-## The Tension Triangle
-
-```
-        REP
-       /    \
-      /      \
-    CCP ---- CRP
+# Dependency graph detection
+# Composer (PHP): composer show --direct | grep -E "packages|requires"
+# npm (TypeScript): npm ls --depth=0
 ```
 
-These three principles pull in different directions:
+Detect: package manager, monorepo structure, module system, existing dependency graph.
 
-- **REP + CCP** (neglect CRP) = Components get large, many unnecessary dependencies
-- **CCP + CRP** (neglect REP) = Hard to reuse, too many small components
-- **CRP + REP** (neglect CCP) = Many small components, too many releases for simple changes
+## Step 1: Generate Context-Specific Rules
 
-**Resolution by project maturity:**
-- **Early development:** Favor CCP — ease of change matters most. You're discovering what changes together.
-- **Growing system:** Shift toward CRP — minimize unnecessary dependencies as the component graph grows.
-- **Mature system:** Favor REP — package for reuse across teams and projects.
+Map principles to detected stack:
 
-The balance is not static. It shifts as the project evolves. Revisit component boundaries as you learn what actually changes together.
+| Stack | Component Boundary | Visibility Control | Dependency Expression |
+|-------|-------------------|-------------------|----------------------|
+| **Composer/PHP** | Package (PSR-4 namespace) | public/protected/private, internal dirs | composer.json require |
+| **npm/TypeScript** | Package (package.json) | exports field, barrel files | package.json dependencies |
+| **Monorepo** | Workspace package | Same as native, plus workspace rules | workspace field enforces CRP |
 
----
+Apply immediately:
+- **REP (Reuse/Release):** Split when components have different release cadences or version lifecycles
+- **CCP (Common Closure):** Merge when changes to one package require changes to another
+- **CRP (Common Reuse):** Isolate unnecessary coupling; remove dependents that import only one symbol
+- **ADP (Acyclic):** Detect cycles with madge/pipdeptree/go mod graph; use Dependency Inversion to break
+- **SDP (Stable Dependencies):** Measure stability (I = Fan-out/(Fan-in+Fan-out)); abstract should flow left, dependencies should flow right
+- **SAP (Stable Abstractions):** When I is high (stable), A must be high (abstract); when I is low (volatile), A must be low (concrete)
 
-## Component Coupling Principles
+**Tension Triangle:** Early stage (prototype) → favor CCP. Mature codebase → balance all three. High-velocity teams → favor REP (loose coupling).
 
-These principles govern relationships *between* components.
+## Step 2: Apply Decision Rules
 
-### ADP: Acyclic Dependencies Principle
+For each package boundary or cycle:
 
-**"There must be no cycles in the component dependency graph."**
+| Decision | Rule | Action |
+|----------|------|--------|
+| **Split now?** | CCP: unrelated changes trigger updates in different directions | Yes if: changes in A never co-occur with B; REP applies |
+| **Merge now?** | CCP: every change to A requires change to B and vice versa | Yes if: <5 symbols exported; <10% external dependents |
+| **Remove dependency?** | CRP: A imports only one symbol from B; or import is for test only | Yes if: can create minimal wrapper or inline; else refactor B |
+| **Break cycle?** | ADP: A→B→A or longer ring detected | Use DIP: introduce abstraction C; both A and B depend on C |
+| **Fix direction?** | SDP: dependency points from stable to volatile | Invert: abstract the stable component; volatile depends upward |
+| **Add abstraction?** | SAP: I > 0.7 (stable) but A ≈ 0 (no interfaces) | Add abstract base; make concrete impl depend on it |
 
-The dependency graph must be a Directed Acyclic Graph (DAG).
+## Step 3: Review Checklist
 
-**The Morning After Syndrome:** You leave code working on Friday. Monday morning, it's broken because someone changed a component you depend on, and they depended on something you changed. Cycles create this — a change anywhere in the cycle ripples everywhere.
+Before merging or shipping:
 
-**The Weekly Build Anti-Pattern:** Teams ignore each other for four days, then spend Friday integrating. As systems grow, integration takes longer and longer, consuming more of the week. This happens when dependency structure isn't managed.
+| Check | Command | Pass Criteria |
+|-------|---------|---------------|
+| **No cycles** | `composer check-platform-reqs` OR manual inspection of composer.json | Empty output |
+| **Stability direction** | Compute I for each pkg; graph should flow up | Dependents have lower I than dependencies |
+| **Abstraction-stability** | For each pkg: A=(abstractions/total classes), I, compute D=\|A+I-1\| | D < 0.5 (Zone of Pain) only for foundation; D > 0.3 (Zone of Uselessness) only for experimental |
+| **Release granularity** | Can each package release independently? | No cross-version pinning within monorepo |
+| **Unnecessary coupling** | Find imports of >1 symbol, <5 used | Move only necessary symbols; rest stays in source |
+| **Pain zones** | Identify (I, A) pairs: Pain=(I>0.8, A<0.3), Useless=(I<0.2, A>0.8) | Pain components are candidates for split or stabilization; Useless are dead code or too abstract |
 
-**Breaking Cycles — two techniques:**
+## Step 4: Refactoring Patterns
 
-Technique 1 — Dependency Inversion:
-```
-// Before: A → B → C → A (cycle!)
-// After: Extract an interface that breaks the cycle
-A → B → C → InterfaceA
-A implements InterfaceA
-// Now C depends on InterfaceA, not on A directly
-```
+### Break Dependency Cycle
+Detect: Inspect composer.json or package.json dependencies manually for circular references
+Apply DIP: Create shared abstraction; both sides depend on it, not each other.
 
-Technique 2 — Extract New Component:
-```
-// Before: A and C both depend on each other
-// After: Extract shared functionality into new component D
-A → D
-C → D
-// Both depend on D, neither depends on the other
-```
+### Split Overloaded Package
+Measure: >500 lines, >15 exported symbols, multiple release cadences. Action: Partition exports by feature; move to separate packages.
 
-**Important:** The component structure is not designed up-front. It evolves. As the system grows, you manage the dependency structure to prevent cycles from forming. The dependency graph is a map of the *buildability* and *deployability* of the system — not a map of the application's functionality.
+### Merge Under-loaded Packages
+Measure: <100 lines, <3 exported symbols, high co-change. Action: Move to parent package; update imports.
 
-### SDP: Stable Dependencies Principle
+### Stabilize Foundation Component
+Identify: High fan-in (>5 dependents), High fan-out (>5 dependencies), Low abstraction. Action: Extract abstract interface; make concrete impl detail; refactor dependents.
 
-**"Depend in the direction of stability."**
+### Abstract Stable Component
+Identify: I > 0.7, A ≈ 0. Action: Define interface/trait/abstract base; move concrete impl to separate internal package; adjust visibility.
 
-A component with many incoming dependencies is stable — it's hard to change because many other components would be affected. A component with no incoming dependencies is unstable — it's easy to change because nothing depends on it.
+## When NOT to Apply
 
-**Stability Metric (I):**
-```
-I = Fan-out / (Fan-in + Fan-out)
+- Single-package projects: Skip until splitting is justified by size or release cycles
+- Early prototypes (< 3 months): Favor CCP; delay splitting
+- Tiny teams (<3 engineers): Fewer components = less coordination cost
+- Internal tools, single consumer: Defer until multi-consumer demand appears
 
-Fan-in:  Number of classes outside that depend on classes inside this component
-Fan-out: Number of classes inside that depend on classes outside this component
+## K-Line History
 
-I = 0: Maximally stable (only incoming dependencies — hard to change)
-I = 1: Maximally unstable (only outgoing dependencies — easy to change)
-```
+**I (Instability) = Fan-out / (Fan-in + Fan-out)**
+- I = 1: no dependents, isolated
+- I = 0: all dependents, stable foundation
+- Optimal: I increases as you go up the dependency graph
 
-**The Adults and Teenagers analogy:** Stable components are like responsible adults — many people depend on them, so they can't change easily. Unstable components are like teenagers — they're volatile, dependent on others, and no one relies on them yet. Neither is inherently good or bad. A system needs both. But teenagers should not be depended upon by adults.
+**A (Abstractness) = (Abstract Classes | Interfaces | Traits) / Total Classes**
+- A = 1: pure abstraction
+- A = 0: pure concrete
+- Optimal: A ≈ 1 - I (main sequence)
 
-**The Rule:** Every component's dependencies should point toward components with lower I values (higher stability). If a stable component depends on an unstable component, the unstable one will effectively become frozen — it can't change without breaking the stable one.
-
-### SAP: Stable Abstractions Principle
-
-**"A component should be as abstract as it is stable."**
-
-Stable components should be abstract so they can be extended without modification. Unstable components should be concrete — they'll change anyway, and concreteness makes them easier to modify.
-
-**Abstractness Metric (A):**
-```
-A = Na / Nc
-
-Na: Number of abstract classes and interfaces in the component
-Nc: Total number of classes in the component
-
-A = 0: Entirely concrete
-A = 1: Entirely abstract
-```
-
-SAP + SDP together = the Dependency Rule from Clean Architecture. High-level policies (abstract, stable) should not depend on low-level details (concrete, unstable).
+**D (Distance from Main Sequence) = |A + I - 1|**
+- D ≈ 0: healthy
+- D > 0.3 (Zone of Uselessness): too abstract, not used
+- D > 0.5 (Zone of Pain): too concrete, too depended-on; refactor
 
 ---
 
-## The Main Sequence
+## Communication Style
 
-Plot components on an A vs. I graph to assess their health:
-
-```
-A (Abstractness)
-1 |  Zone of          .
-  |  Uselessness    .
-  |              .
-  |           .   ← Main Sequence (ideal line)
-  |        .
-  |     .
-  |  .   Zone of Pain
-0 +-------------------→ I (Instability)
-  0                    1
-```
-
-**Zone of Pain (A=0, I=0):** Highly stable AND highly concrete. Hard to change, and there's no abstraction to extend. Database schemas and foundational utility classes often land here — acceptable if they're non-volatile (rarely change). Painful if they DO change.
-
-**Zone of Uselessness (A=1, I=1):** Maximally abstract AND maximally unstable. No one depends on it, and it does nothing concrete. Dead interfaces and abandoned abstractions live here.
-
-**The Main Sequence:** The line from (A=1, I=0) to (A=0, I=1). Well-designed components fall near this line — their abstractness matches their stability.
-
-**Distance from Main Sequence (D):**
-```
-D = |A + I - 1|
-
-D = 0: Component is on the Main Sequence
-D = 1: Component is as far as possible from the Main Sequence
-```
-
-Track D over time. Components drifting away from the Main Sequence need attention. A statistical analysis of D across all components reveals the overall health of the component structure.
-
----
-
-## Review Checklist
-
-When reviewing component design:
-
-**Cohesion:**
-- [ ] Each component contains classes that belong together (REP)
-- [ ] Classes that change together are in the same component (CCP)
-- [ ] No component forces users to depend on things they don't need (CRP)
-- [ ] The tension triangle balance is appropriate for project maturity
-
-**Coupling:**
-- [ ] No cycles in the dependency graph (ADP)
-- [ ] Dependencies point toward stability (SDP)
-- [ ] Stable components are abstract (SAP)
-- [ ] Components near the Main Sequence (low D values)
-
-**Practical:**
-- [ ] Component boundaries align with team boundaries
-- [ ] Each component can be built and tested independently
-- [ ] Component versions are meaningful — a release contains related changes
-- [ ] New components can be added without modifying existing ones
-
----
-
-## Common Pitfalls
-
-**Designing components top-down.** Component structure is not designed at the start of a project. It evolves as the system grows and as you discover what actually changes together. Early in development, you have no reusers, no dependency issues, and no deployment concerns. Component structure emerges from the need to manage complexity.
-
-**Confusing component diagrams with functionality maps.** The component dependency graph is NOT a map of how the application works. It's a map of buildability and deployability. Don't try to represent the functional decomposition of the application in the component diagram.
-
-**Ignoring the Tension Triangle.** Optimizing for all three cohesion principles simultaneously is impossible. You must choose which to emphasize based on where the project is. Trying to optimize for reuse (REP + CRP) in early development wastes time. Ignoring reuse in a mature system creates duplication.
-
-**Treating stability as always good.** A system where every component is maximally stable (I=0) is rigid and impossible to change. You need unstable components — they're where the easy-to-change concrete implementation lives. The goal is not maximum stability everywhere, but proper stability *direction* — dependencies pointing from unstable toward stable.
-
----
-
-## Related Skills
-
-- **/solid** — The class-level principles that component principles build on (SRP→CCP, ISP→CRP)
-- **/architecture** — Clean Architecture uses component principles to enforce the Dependency Rule
-- **/patterns** — Design patterns often guide how to structure components and their interactions
-- **/professional** — Professional standards for code quality and maintainability
+- Use metrics as operational diagnostics, not teaching moments
+- Pair each rule with a concrete bash/CLI command
+- Frame decisions as tradeoffs in the Tension Triangle
+- Focus on: Can we release this independently? Does it have too many jobs? Are we stable enough to abstract?
+- Keep refactoring patterns small and named; pair with one metric check each

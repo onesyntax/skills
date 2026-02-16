@@ -1,219 +1,215 @@
 ---
 name: naming
 description: >-
-  Analyze and apply Clean Code naming principles to code. Activate whenever
-  writing new code, reviewing existing code, renaming, refactoring, or doing
-  code review. Also activate when the user mentions naming, unclear names,
-  intent-revealing names, or readability. Naming is the foundation — bad names
-  poison functions, classes, and architecture. When in doubt, activate this
-  skill. Every name is a chance to communicate or to confuse.
-allowed-tools: Read, Grep, Glob
+  Analyze and improve naming in code. Activate when writing new code, reviewing
+  existing code, renaming, refactoring, or doing code review. Also activate when
+  the user mentions naming, unclear names, intent-revealing names, or readability.
+  Every name is a chance to communicate or to confuse — when in doubt, activate.
+model: opus
+allowed-tools: Read, Grep, Glob, Edit, Write
+delegates-to:
+  - solid  # when noise-word class names reveal SRP violations
 argument-hint: [code or file to analyze]
 ---
 
-# Naming Skill
+# Naming Skill — Operational Procedure
 
-Names are your primary tool for communicating intent — more important even than making the code work, because wrong code with good names gets fixed fast, while working code with bad names rots silently. A name that forces a reader into the implementation has failed.
+## Step 0: Detect Context
 
-This skill covers two modes: **choosing good names** when writing code, and **identifying bad names** when reviewing code.
+Before applying any naming guidance, detect the project's stack:
 
-For detailed naming walkthroughs and before/after examples, read `references/extended-examples.md`.
+1. **Language detection:**
+   - Check file extensions in scope: `*.php`, `*.ts`, `*.tsx` (PHP/TypeScript-first). Also support `*.py`, `*.go`, `*.rb`, `*.java`, `*.rs`, etc.
+   - Read a representative file to confirm language and style
+2. **Build system and testing detection:**
+   - Check for build markers: `composer.json` (PHP), `package.json` (TypeScript/Node), `phpunit.xml` (PHP), `jest.config.*` or `vitest.config.*` (TypeScript)
+   - Check for `.env`, `tsconfig.json`, root-level config files
+   - Grep for language imports: `use` statements (PHP), `import` statements (TypeScript)
+3. **Convention detection:**
+   - Read existing code to identify naming conventions already in use
+   - Check for a linter config (`.eslintrc`, `.php-cs-fixer.php`, `phpstan.neon`, `.editorconfig`)
+   - Check for a style guide or CONTRIBUTING.md
+   - For PHP: check for PSR-12 compliance. For TypeScript: check for TypeScript strict mode.
 
----
-
-## The Six Principles
-
-### 1. Reveal Intent
-
-A name should tell you why something exists, what it does, and how it's used — without needing a comment or reading the implementation.
-
-**Test:** If someone has to read the code body to understand the name, the name has failed.
-
-```
-// Bad — requires reading implementation
-d
-pcguda
-
-// Good — self-documenting
-elapsedTimeInDays
-postingCutoffDate
-```
-
-### 2. Never Disinform
-
-A name must say what it means and mean what it says. If the meaning drifts, rename immediately. A misleading name costs more time than a missing name.
-
-```
-// Bad — returns month NAMES, not months
-getMonths(shortened)
-
-// Good — says what it actually returns
-getMonthNames(abbreviated)
-```
-
-Abstract classes deserve abstract names. Giving a concrete name to an abstract class is disinformation (e.g., `SerialDate` for an abstract date class should be `DayDate` or `CalendarDate`).
-
-### 3. Be Pronounceable
-
-People discuss code out loud. If you can't say the name in conversation, it will generate ad-hoc pronunciations that differ between teammates.
-
-```
-// Bad — "P-C-G-U-D-A"? "Gooda"?
-pcguda
-
-// Good — say it in a sentence
-postingCutoffDate
-```
-
-### 4. Be Searchable
-
-You should be able to grep for a name. Single letters and magic numbers fail this. The exception: single-letter variables in tiny scopes (2-3 line loops).
-
-### 5. Match Scope to Length
-
-**Variables** — name length proportional to scope:
-
-| Scope | Name style | Example |
-|-------|-----------|---------|
-| Loop body (2-3 lines) | Single letter OK | `for (e in elements)` |
-| Method body | Short but clear | `account`, `total` |
-| Class field | Descriptive | `activeUserCount` |
-| Global/module | Very descriptive | `maximumLoginAttemptsBeforeLockout` |
-
-**Functions and classes** — the *opposite* rule:
-
-| Scope | Name style | Why |
-|-------|-----------|-----|
-| Public API | Short, convenient | Called from many places: `open()`, `save()` |
-| Private/internal | Longer, explanatory | Serves as documentation: `tryReconnectWithExponentialBackoff()` |
-
-Derived classes naturally get longer: `Account` -> `SavingsAccount` -> `HighYieldSavingsAccount`.
-
-### 6. Use Correct Parts of Speech
-
-Code should read like prose. Wrong parts of speech create friction.
-
-| Thing | Part of speech | Examples |
-|-------|---------------|----------|
-| Class, variable | Noun / noun phrase | `Account`, `messageParser` |
-| Method | Verb / verb phrase | `postPayment()`, `calculateTotal()` |
-| Boolean | Predicate | `isEmpty`, `hasChildren`, `canExecute` |
-| Enum value | Adjective or noun | `OPEN`, `CLOSED`, `PENDING` |
-| Property/getter | Noun (method pretending to be a variable) | `account.balance` |
+All subsequent naming advice MUST use the detected language's casing, idioms, and conventions. For PHP: use PSR-12 (camelCase methods, PascalCase classes, snake_case database columns). For TypeScript: use camelCase functions/variables, PascalCase classes/types.
 
 ---
 
-## Encodings to Remove
+## Step 1: Generate Context-Specific Rules
 
-In the DOS/C era, programmers couldn't hover over a variable to see its type. Type errors weren't caught until runtime. No unit tests existed. Prefixes like `psz` and `b` were a survival mechanism — they encoded type information that nothing else could tell you.
+Based on the detected stack, adapt the universal naming principles to concrete rules:
 
-That era is over. Modern IDEs show types on hover. Compilers catch type mismatches at compile time. Unit tests verify behavior. Strong type systems prevent entire categories of error. Encodings are now pure noise — they obscure the name's intent behind outdated abbreviations.
-
-| Encoding | Example | Fix |
-|----------|---------|-----|
-| Hungarian notation | `pszName`, `bIsValid`, `nCount` | `name`, `isValid`, `count` |
-| Interface prefix | `IAccount` | `Account` (impl gets the suffix: `AccountImpl`) |
-| Member prefix | `m_configIssues` | `configIssues` |
-| Class prefix | `CAccount` | `Account` |
-| Type suffix | `nameString`, `accountList` | `name`, `accounts` |
+| Principle | Adapt to... |
+|-----------|-------------|
+| Parts of speech | **PHP**: `isEmpty()`, `hasPermission()`, `isActive()` (camelCase methods). **TypeScript**: `isLoading`, `hasError`, `canSubmit` (camelCase). PHP classes: descriptive method names like `getUserById()`, `validateEmail()` |
+| Scope-length | **PHP**: Methods in classes descriptive. **TypeScript**: Function names short and clear, descriptive for complex operations |
+| Encodings | TypeScript generics make encodings unnecessary (`List<User>` is clear). PHP type hints in PHP 8+ also make Hungarian notation absurd. |
+| Noise words | **PHP**: Don't say `UserService` if it's in `Services/`. **TypeScript**: Don't say `UserHelper` if it's in `utils/`. Use the module structure. |
 
 ---
 
-## Respect the Language's Idioms
+## Step 2: Apply Decision Rules
 
-The six naming principles are universal. Casing, style, and conventions are not — they belong to whatever language you're working in. Follow the established conventions of the language and the project's existing style. A name that violates the language's idioms is a naming violation, even if the underlying principle is sound.
+### Rule 1: Intent Revelation
 
----
+- **WHEN to apply:** Every name, every time. No exceptions.
+- **WHEN NOT:** Never skip this one.
+- **Decision test:** Cover the implementation. Read only the name. Can you explain what this thing does to a colleague? If no → rename.
+- **Verification:** `grep` for the name — at every call site, does the code read like prose without needing to jump to the definition?
 
-## Noise Words to Avoid
+### Rule 2: No Disinformation
 
-These words are synonyms for "I don't know what to call this":
+- **WHEN to apply:** Any name that could be misread. Especially return types, collection names, boolean names.
+- **WHEN NOT:** Internal helper variables with 2-line scope where the context makes meaning unambiguous.
+- **Decision test:** Does the name promise X but deliver Y? Does `getMonths()` return month objects, month numbers, or month name strings?
+- **Severity:** RED FLAG — disinformation is the most expensive naming bug. A misleading name costs more than a missing name.
+- **Verification:** Read the function signature + body. Does the return type match what the name implies?
 
-`Manager`, `Processor`, `Handler`, `Data`, `Info`, `Helper`, `Utils`, `Service` (when vague), `Impl` (when the only impl)
+### Rule 3: Pronounceability
 
-If you catch yourself reaching for one, ask: *what does this class actually DO?* Name it after that.
+- **WHEN to apply:** Any name that will be discussed in code reviews, standups, pair programming.
+- **WHEN NOT:** Auto-generated code, protobuf field names, wire protocol fields where the name is dictated by an external spec.
+- **Decision test:** Say the name out loud in a sentence. If you can't, or you pause to spell it, rename.
+- **Verification:** Say "The `<name>` handles..." — does it sound natural?
 
----
+### Rule 4: Searchability
 
-## When Writing New Code
+- **WHEN to apply:** Any name in a scope larger than 3 lines.
+- **WHEN NOT:** Loop variables in 1-3 line bodies (`for i in range(3)`), lambda parameters in single-expression lambdas.
+- **Decision test:** `grep -r "name" .` — do you get the thing you're looking for, or 500 false positives?
+- **Verification:** Run the grep. If the name is a common English word, it needs qualification.
 
-Use this checklist as you name things:
+### Rule 5: Scope-Length Proportionality
 
-1. **Say it out loud.** Can you use this name in a sentence to a colleague?
-2. **Cover the implementation.** Does the name alone tell you what this thing is for?
-3. **Check the scope.** Is the length appropriate? (short scope = short name for variables; opposite for functions)
-4. **Check the grammar.** Right part of speech? Nouns for things, verbs for actions, predicates for booleans?
-5. **Check the language.** Following the casing/style conventions of the language?
-6. **Search for it.** Can you grep for this name and find it?
+- **WHEN to apply:** Always, but the direction reverses for variables vs functions:
 
----
+| Thing | Short scope → | Long scope → |
+|-------|--------------|-------------|
+| Variable | Short name OK (`e`, `i`) | Long descriptive name required |
+| Function (public) | Short convenient name (`save()`) | — |
+| Function (private) | — | Long explanatory name (`tryReconnectWithBackoff()`) |
 
-## When Reviewing Code
+- **WHEN NOT:** When the project has established a convention that contradicts this (e.g., a math library where `x`, `y`, `z` are conventional even at class scope).
+- **Verification:** Check the distance between declaration and usage. If > 10 lines, the name should be self-documenting.
 
-### Process
+### Rule 6: Correct Parts of Speech
 
-1. Read the code and understand context
-2. Identify naming violations (with specific locations)
-3. Explain which principle is violated and why it matters
-4. Suggest improved names with reasoning
-5. Prioritize by impact:
+- **WHEN to apply:** All names.
+- **WHEN NOT:** When the language has conventions that override (e.g., PHP magic methods like `__get()`, TypeScript getters with `get propertyName()`).
 
-| Severity | Type | Example |
-|----------|------|---------|
-| Critical | Disinformation — name means something different than code does | `getMonths()` returns month name strings |
-| High | Cryptic abbreviation in long scope | `d` used 20 lines from declaration |
-| Medium | Wrong part of speech, noise words | `fewerThan24Bits` as a variable (sounds like a predicate) |
-| Low | Unnecessary encoding, overly long name in short scope | `m_count` in a 3-line method |
+| Thing | PHP Examples | TypeScript Examples | Red flag |
+|-------|------------------|-----------------|----------|
+| Class/type | `User`, `OrderValidator`, `PaymentGateway` | `UserProfile`, `OrderForm`, `type User` | Verb name on a class |
+| Method/function | `validateOrder()`, `processPayment()`, `getUserById()` | `handleSubmit()`, `fetchUser()`, `calculateTotal()` | Noun name on a function that does work |
+| Boolean | `isActive()`, `hasPermission()`, `canEdit()` | `isLoading`, `hasError`, `shouldRender` | Non-predicate name on a boolean |
+| Constant/enum | `const MAX_RETRIES`, `Status::PENDING` | `const RETRY_LIMIT`, `enum Color` | Verb name on a constant |
 
-### Output Format
-
-For each issue found:
-
-```
-**Name:** `badName`
-**Location:** file:line
-**Principle violated:** [which of the six]
-**Problem:** [why this name hurts readability]
-**Suggestion:** `betterName`
-**Reasoning:** [why the new name is better]
-```
-
----
-
-## Common Traps
-
-**The setter-that-returns-boolean trap:**
-```
-// Ambiguous — is this asking or telling?
-if set("username", "Uncle Bob") then ...
-
-// Fix: separate command from query
-set("username", "Uncle Bob")   // throws on failure
-if isSet("username") then ...  // asks without changing
-```
-
-**The boolean parameter trap:**
-```
-// Caller can't tell what true means
-render(document, true)
-
-// Fix: use an enum or named constant
-render(document, DRAFT)
-```
-
-**The abstract class with concrete name:**
-```
-// Bad — "Serial" implies a specific implementation
-abstract class SerialDate
-
-// Good — abstract name for abstract class
-abstract class CalendarDate
-```
+- **Verification:** Read `if <boolean_name>` — does it form a grammatical English sentence? (E.g., "if user isActive" works; "if user validate" doesn't.)
 
 ---
 
-## Related Skills
+## Step 3: Review Checklist
 
-- `/functions` — function naming is tightly coupled with function design
-- `/professional` — taking responsibility for clear communication
-- `/clean-code-review` — comprehensive review that includes naming checks
+Run against every name in scope. Each item has a severity and verification test.
+
+| # | Check | Look for | Severity | Verification |
+|---|-------|----------|----------|-------------|
+| 1 | Name says wrong thing | Return type doesn't match name implication | 🔴 Red flag | Read function body, compare to name |
+| 2 | Cryptic abbreviation | `pcguda`, `txnMgr`, `dt` in long scope | 🔴 Red flag | Can you say it in a sentence? |
+| 3 | Noise word class name | `UserManager`, `DataProcessor`, `Helper`, `Utils` | 🟡 Warning | Ask: what does this class actually DO? Name it that. |
+| 4 | Wrong part of speech | Function named as noun, boolean without predicate | 🟡 Warning | Read the call site as a sentence |
+| 5 | Encoding/prefix | `m_`, `I`-prefix, Hungarian, type suffix | 🟡 Warning | Does the language/IDE already provide this info? |
+| 6 | Scope mismatch | Single letter in 50-line scope, 40-char name in 3-line loop | 🟢 Good sign to fix | Measure declaration-to-usage distance |
+| 7 | Unsearchable | Common word without qualification | 🟢 Good sign to fix | `grep -rn "name" .` — count false hits |
+
+---
+
+## Step 4: Refactoring Patterns
+
+For each pattern: identify the problem in the PROJECT'S language, show before/after using the project's actual syntax.
+
+### Pattern: Reveal Intent (cryptic → descriptive)
+
+**Problem:** Name requires reading implementation to understand.
+**Steps:**
+1. Read the function/variable body
+2. Write a one-sentence description of what it does
+3. Turn that sentence into a name using the language's conventions
+4. Rename across all call sites (IDE rename or `grep` + `sed`)
+5. Run tests
+
+### Pattern: Fix Disinformation (misleading → accurate)
+
+**Problem:** Name implies different behavior than implementation delivers.
+**Steps:**
+1. Document what the function actually returns/does
+2. Either rename to match behavior, or fix behavior to match name (ask which — this is a design decision)
+3. Check all callers — some may depend on the "wrong" behavior
+4. Run tests
+
+### Pattern: Kill Noise Words (vague → specific)
+
+**Problem:** Class/module named `Manager`, `Helper`, `Utils`, `Service`, `Handler`, `Processor`.
+**Steps:**
+1. List the class's public methods
+2. Identify the common theme — what is this class's single responsibility?
+3. Name it after that responsibility
+4. If no single responsibility exists, this is a class decomposition problem, not just naming — flag for `/solid` skill
+5. Run tests
+
+### Pattern: Extract Boolean Predicate
+
+**Problem:** Boolean variable without predicate prefix, or confusing negation.
+**Steps:**
+1. Identify all booleans in scope
+2. Rename to `is_`, `has_`, `can_`, `should_` + positive condition (adapted to language convention)
+3. Eliminate double negatives (`!isNotEmpty` → `isEmpty`)
+4. Run tests
+
+---
+
+## When NOT to Apply This Skill
+
+Ignore naming rigor in favor of pragmatism when:
+
+- **Prototyping/spike:** You're exploring an approach and the code will be rewritten. Use TODO comments on bad names instead.
+- **Generated code:** Protobuf, OpenAPI codegen, ORM migrations — rename at the boundary, not in the generated files.
+- **External API conformance:** Your name must match an external spec (wire protocol, third-party SDK field names). Wrap with a better name at your boundary.
+- **Team velocity vs. perfection:** A `Handler` that the whole team knows and has 200 call sites isn't worth a bulk rename during a sprint. Track it as tech debt.
+- **Micro-scope:** A 2-line lambda's parameter name doesn't need 20 characters.
+
+---
+
+## K-Line History (Lessons Learned)
+
+> This section should grow over time with actual project experience.
+
+### What Worked
+- **PHP**: Renaming a vague `process()` to `validateAndRouteOrder()` made three bugs immediately visible — callers were passing unvalidated data.
+- **TypeScript**: Extracting complex logic into a named helper function made its purpose clear and testable in isolation.
+- Adopting the rule "if grep gives >10 false positives, the name needs qualification" caught naming issues before code review.
+- Using language-specific boolean conventions (`hasPermission()` in PHP, `isLoading` in TypeScript) eliminated an entire class of review comments.
+
+### What Failed
+- Aggressive renaming in a legacy PHP codebase without full test coverage caused runtime failures due to string-based method calls or dynamic property access.
+- **TypeScript**: Renaming properties without updating type definitions or interfaces caused TypeScript errors in consuming code.
+- Renaming database column accessors without updating the mapping layers caused silent data mismatches.
+- Over-long method names in hot-path financial calculations reduced readability — `calculateCompoundInterestWithMonthlyCompounding` was worse than `compoundInterest` when the calculation method is documented elsewhere.
+
+### Edge Cases
+- **PHP database mapping**: Column name mapping may not match method names in database abstraction layers. Document the mapping.
+- **TypeScript with generic types**: Generic names like `Container`, `Wrapper`, `Layout` are fine IF they're structural, not behavioral. But behavioral names must be specific.
+- Domain abbreviations that ARE the name: `DNS`, `URL`, `HTML`, `SSR`, `JWT` — don't expand these, they're more recognizable abbreviated. Same in PHP/TypeScript contexts.
+- Teams with mixed language backgrounds: what's "pronounceable" varies. Default to full English words, especially in international teams.
+
+---
+
+## Communication Style
+
+When recommending name changes:
+
+1. **Show before/after** in the project's actual language and file
+2. **Estimate effort:** "This is a safe IDE rename" vs "This touches 47 files and needs careful testing"
+3. **Prioritize:** Fix disinformation first (🔴), then cryptic names in wide scope, then noise words
+4. **Be direct about tradeoffs:** "This name is bad but it's in generated code — rename at the boundary instead"
+5. **Batch related renames:** If three names in the same module are bad, present them together

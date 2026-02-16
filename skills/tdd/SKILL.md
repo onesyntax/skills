@@ -1,351 +1,262 @@
 ---
 name: tdd
 description: >-
-  Guide TDD workflow using Uncle Bob's Three Laws. Activate when implementing features,
-  writing tests, fixing bugs, creating handlers/services/use cases, or when the user
-  mentions test-first, TDD, red-green-refactor, failing test, or test-driven. TDD is
-  the discipline that makes clean code possible — without it, refactoring is too risky
-  and code rots.
+  Guide TDD workflow. Activate when implementing features, writing tests, fixing bugs,
+  creating handlers/services/use cases, or when the user mentions test-first, TDD,
+  red-green-refactor, failing test, or test-driven. TDD is the mandatory discipline
+  for all feature work — activate proactively, not just when asked.
+model: opus
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob
+delegates-to:
+  - naming      # during REFACTOR phase
+  - functions   # during REFACTOR phase
+  - legacy-code # when retrofitting tests to existing codebase
 argument-hint: [feature description]
 ---
 
-# TDD Skill
+# TDD Skill — Operational Procedure
 
-Test-Driven Development is the discipline of writing tests before production code. It creates a rapid feedback loop that keeps code clean, provably correct, and safe to change. Without TDD, refactoring is too risky, and without refactoring, code rots.
+## Step 0: Detect Context
 
-**The Fundamental Principle:** As the tests get more specific, the code gets more generic. Each new test case makes the tests more specific; to pass each test, you generalize the production code. This is how algorithms emerge incrementally.
+Before writing any test, detect the project's testing stack:
 
-For detailed TDD cycle walkthroughs, read `references/extended-examples.md`.
+1. **Language and build system:**
+   - Check file extensions and build markers: **PHP/TypeScript-first** → `composer.json`, `package.json`. Also support `go.mod`, `Cargo.toml`, `pom.xml`, etc.
+   - Read a representative source file to confirm language
+2. **Test framework:**
+   - **PHP**: Check for `phpunit.xml`, `tests/` directory, or `pest.xml` config
+   - **TypeScript**: Check for `jest.config.*`, `vitest.config.*`, `*.test.ts`, `*.test.tsx`
+   - Also check: `pytest.ini`, `*_test.go`, `Cargo.toml [dev-dependencies]`, `.rspec`
+   - Read an existing test file to learn the project's test patterns
+   - If no tests exist: check the package manager's default test runner and set up accordingly
+3. **Test location convention:**
+   - **PHP**: `tests/Unit/`, `tests/Feature/`, or co-located `*Test.php`
+   - **TypeScript**: `__tests__/`, `*.test.ts`/`*.test.tsx` co-located with source
+   - Match whatever the project already does
+4. **Assertion style:**
+   - Read existing tests: **PHP** uses `assertEquals`, `assertTrue`, `assertArrayHasKey`; **TypeScript** uses `expect().toBe()`, `expect().toHaveBeenCalled()`
+   - Match the project's established assertion library
+5. **Mock/stub tooling:**
+   - **PHP**: PHPUnit's built-in mocks, or Mockery
+   - **TypeScript**: Jest mocks, vi.mock (Vitest), testdouble
+   - Identify dependency injection patterns already in use
+6. **Run command:**
+   - **PHP**: `./vendor/bin/phpunit`, or test runner configured in `composer.json`
+   - **TypeScript**: `npm test`, `npm run test:watch`, `yarn test`
+   - Identify how to run a single test file or test case
 
----
-
-## The Three Laws of TDD
-
-These laws are disciplines that must be followed like a doctor washing hands before surgery:
-
-**First Law:** You are not allowed to write any production code until you have first written a failing unit test.
-
-**Second Law:** You are not allowed to write more of a unit test than is sufficient to fail, and not compiling is failing.
-
-**Third Law:** You are not allowed to write more production code than is sufficient to pass the currently failing test.
-
-Following all three laws locks you into a cycle approximately 20-30 seconds long: little test, little code, little test, little code. Everything always worked a minute or so ago.
-
----
-
-## The Red-Green-Refactor Cycle
-
-### Step 1: Understand the Feature
-
-- Analyze what behavior needs to exist
-- Identify the acceptance criteria
-- Break down into testable increments
-
-### Step 2: List Test Cases
-
-- Enumerate all scenarios that need testing
-- Start with degenerate cases (null, empty, single element)
-- Progress to more complex scenarios
-- Order from simplest to most complex
-
-### Step 3: RED — Write Failing Test
-
-- Write a small test for the next increment
-- Run the test to see it fail
-- The failure message should clearly indicate what's missing
-- **Do not write production code yet**
-- Stop as soon as any test fails (including compilation errors)
-
-### Step 4: GREEN — Write Minimum Code
-
-- Write ONLY enough production code to make the test pass
-- Use "fake it till you make it" — return constants, use trivial implementations
-- Don't worry about elegance — just make it pass
-- Run the test to see it pass
-- **Do not add extra functionality**
-
-### Step 5: REFACTOR — Clean Up
-
-- Clean up both production code AND test code
-- Apply `/naming` principles for clear, intention-revealing names
-- Apply `/functions` principles for proper function structure
-- Remove duplication
-- Run tests to ensure they still pass
-- **Only restructure, don't add features**
-- Refactoring never appears on a schedule — you do it all the time
-
-### Step 6: Repeat
-
-- Return to Step 3 for the next test case
-- Continue until all scenarios are covered
-- Cycle time should be seconds to minutes, not hours
-
-### Example Cycle
-
-```
-// RED: Write failing test
-test "returns empty for zero":
-    assert fizzBuzz(0) == ""
-// Run: FAIL — fizzBuzz is not defined
-
-// GREEN: Minimal passing code
-fizzBuzz(n):
-    return ""
-// Run: PASS
-
-// RED: Next test
-test "returns '1' for 1":
-    assert fizzBuzz(1) == "1"
-// Run: FAIL — expected "1", got ""
-
-// GREEN: Make it pass
-fizzBuzz(n):
-    if n == 0: return ""
-    return toString(n)
-// Run: PASS
-
-// REFACTOR: (nothing to refactor yet — continue cycle)
-```
+All subsequent test code MUST use the detected language's actual syntax, assertion style, and conventions.
 
 ---
 
-## TDD Techniques
+## Step 1: Generate Context-Specific Rules
 
-### Fake It Till You Make It
+Adapt TDD mechanics to the detected stack:
 
-Make a test pass by returning a constant (faking it). Then the next test forces you to fake less. Continue until you're not faking anymore. Making incremental progress toward a goal is not wasting time — it's how you save time.
-
-### Stair-Step Tests
-
-Write a test just to enable writing the next test — then delete it once it's served its purpose. Like digging stairs to reach the bottom of a hole. Example: first test creates the class, second test calls a method, third test actually tests behavior.
-
-### Assert First
-
-Write the test backwards, starting with the assert. Let compiler errors guide you to create what's needed. Forces you to think about the desired outcome first.
-
-### Triangulation
-
-Write two tests that force you to generalize. First test can be passed with a constant. Second test requires actual logic. Used to drive generalization of production code.
-
-### One-to-Many
-
-Implement operations on collections by first implementing for a single object. Make it work in the singular case first, then generalize to the plural case.
-
-### Getting Stuck
-
-**Signs:** Nothing incremental you can do to pass the test. You have to write the whole algorithm at once.
-
-**Causes:** Wrote the wrong test (went for the gold too early). Making production code too specific. Not approaching from outside in.
-
-**Solutions:** Start with degenerate test cases (null, empty, single element). Test peripheral issues first (validation, simple queries). Avoid complicated test cases until simple ones are exhausted. Engage as few brain cells as possible at any given moment.
+| Concern | Adapt to... |
+|---------|-------------|
+| Test structure | **PHP**: PHPUnit test class with `test` methods. **TypeScript**: Jest `describe/it` blocks. Also support: pytest `def test_`, Go `func Test`, Rust `#[test]` |
+| Assertions | **PHP**: `assertEquals`, `assertTrue`, `assertArrayHasKey`. **TypeScript**: `expect().toBe()`, `expect().toHaveBeenCalled()`. Match project's library. |
+| Mocking | **PHP**: PHPUnit's `createMock()`, or Mockery. **TypeScript**: Jest/Vitest `vi.mock()`. Hand-roll only if no library exists. |
+| File naming | **PHP**: `tests/Unit/UserRepositoryTest.php`, `tests/Feature/OrderProcessorTest.php`. **TypeScript**: `UserProfile.test.tsx`, `useCart.test.ts`. Match project convention. |
+| Setup/teardown | **PHP**: `setUp()`, `tearDown()` in test class. **TypeScript**: `beforeEach`, `afterEach` in describe block. |
+| Running | **PHP**: `./vendor/bin/phpunit`. **TypeScript**: `npm test -- --watch`. Single test command for fast feedback during the cycle. |
 
 ---
 
-## Clean Test Principles
+## Step 2: Execute the TDD Cycle
 
-### F.I.R.S.T. Properties
+### Phase 0: Break Down the Feature
 
-Tests should be:
+1. Read the feature/bug description
+2. List acceptance criteria
+3. Enumerate test cases, ordered simplest → most complex:
+   - Degenerate cases first (null, empty, zero, single element)
+   - Happy path
+   - Edge cases
+   - Error cases
+4. Each test case should be writable in under 2 minutes
 
-- **Fast**: Tests should run quickly (thousands of tests in seconds)
-- **Independent**: Tests should not depend on each other
-- **Repeatable**: Tests should produce the same results every time
-- **Self-validating**: Tests should have a boolean output — pass or fail
-- **Timely**: Tests should be written before the production code
+### Phase 1: RED — Write a Failing Test
 
-### The Single Assert Rule (AAA / Triple-A)
+**Decision rules:**
 
-Every test should have ONE logical assertion following ONE logical action:
+- **WHEN:** Always start here. No production code exists yet for this behavior.
+- **WHEN NOT:** Never skip RED. If you're writing production code without a failing test, stop.
+- **HOW:**
+  1. Write ONE test for the next simplest case
+  2. Run it — it MUST fail
+  3. The failure message should clearly describe what's missing
+  4. Stop writing test code the moment compilation fails or an assertion fails
+- **Verification:** Test runner shows RED (failure). If the test passes immediately, it's testing nothing — delete it and write a real one.
 
-- **Arrange**: Set up the test fixture (the state needed to run the test)
-- **Act**: Call the function or perform the action being tested
-- **Assert**: Verify the result is correct
-- **Annihilate** (optional 4th A): Clean up any persistent state
+**Techniques by situation:**
 
-The rule constrains **act-assert pairs**, not physical assert statements. Multiple physical asserts forming ONE logical assertion is fine. `act-assert-act-assert-act-assert` is NOT fine.
+| Situation | Technique |
+|-----------|-----------|
+| Don't know where to start | **Assert First** — write the assertion, let errors guide you backward |
+| Need infrastructure before real test | **Stair-Step** — write a test that just creates the class, then delete it after the real test works |
+| Test could pass with a constant | **Triangulation** — write a second test that forces generalization |
+| Collection behavior | **One-to-Many** — test singular case first, then generalize to collection |
 
-Also known as **Given-When-Then** (BDD style) or **Build-Operate-Check**. Arrange = Given, Act = When, Assert = Then.
+### Phase 2: GREEN — Make It Pass
 
-### Composed Assertions
+**Decision rules:**
 
-When you have multiple physical assertions checking one logical state, compose them into a single well-named function:
+- **WHEN:** Exactly one test is failing.
+- **WHEN NOT:** If multiple tests fail, you jumped too far. Back up and make the previous test pass first.
+- **HOW:**
+  1. Write the MINIMUM code to make the test pass
+  2. Fake it if needed — return a constant, use a trivial implementation
+  3. Run the test — it MUST pass
+  4. Do NOT add functionality beyond what the failing test demands
+- **Verification:** All tests GREEN. If any test broke, you changed too much.
+- **Time limit:** If GREEN takes more than 5 minutes, the RED step was too big. Delete the test, write a simpler one.
 
-```
-// Instead of:
-assert hvac.isHeaterOn()
-assert hvac.isFanOn()
-assert not hvac.isCoolerOn()
+### Phase 3: REFACTOR — Clean Up
 
-// Use:
-assertHvacState("HFc")  // H=heater on, F=fan on, c=cooler off
-```
+**Decision rules:**
 
----
+- **WHEN:** All tests are GREEN. Always. Never skip this phase.
+- **WHEN NOT:** If tests are RED, fix them first — don't refactor broken code.
+- **HOW:**
+  1. Clean BOTH production code AND test code
+  2. Apply `/naming` — do all names reveal intent?
+  3. Apply `/functions` — are functions small, single-purpose, low-argument?
+  4. Remove duplication between test and production code
+  5. Remove duplication between tests (extract shared setup, compose assertions)
+  6. Run all tests after each refactoring move — stay GREEN
+- **Verification:** All tests still GREEN. Code is cleaner than before. No behavior changed.
 
-## Test Structure and Organization
+### Phase 4: REPEAT
 
-### Test Fixtures
+Return to RED for the next test case. Cycle time target: 1-5 minutes per RED-GREEN-REFACTOR iteration.
 
-Three approaches to managing test state:
-
-1. **Transient Fresh** (preferred): Created and destroyed around each test. No teardown needed. Tests cannot communicate with each other.
-
-2. **Persistent Fresh**: Persistent parts reset after each test using teardown functions. For files, sockets, database connections.
-
-3. **Persistent Shared**: State accumulates across tests using suite-level setup/teardown. Use sparingly — only for expensive resources like database connections.
-
-The fresher the better. Transient is tops.
-
-### Hierarchical Tests
-
-Use test hierarchies to manage growing setups. Group tests by context, each level with its own setup. Inner setups execute after outer setups. This prevents one giant setup method that contains code only some tests need.
-
-### Test Naming Conventions
-
-Name tests for requirements, not implementation:
-
-- Use Given-When-Then pattern
-- Setup functions describe the "Given" part
-- Test name describes the "When-Then" part
-- Avoid magic numbers — use named constants that reflect requirements
-- Example: `whenPayrollIsRun_thenPaymasterHoldsCheckForHoursTimesRate`
-
-### Physical Test Structure
-
-- One test file per production class (generally)
-- Interfaces don't have tests
-- Inner classes usually tested through outer class tests
-- Tests test BEHAVIOR, not implementation details
+**Getting stuck indicators:**
+- Can't think of a small enough test → you're trying to test too much at once. Test a degenerate case.
+- GREEN requires writing an entire algorithm → the RED test was too ambitious. Delete it, write something simpler.
+- Lots of tests breaking during REFACTOR → tests are coupled to implementation, not behavior. Fix the tests.
 
 ---
 
-## Test Doubles
+## Step 3: Review Checklist
 
-### The Five Types
+Run after the TDD cycle completes, before presenting work as done.
 
-**Dummy:** Implements an interface where all functions do nothing. Returns null or zero for everything. Used when you need to pass an object but don't care about it.
-
-**Stub:** A dummy that returns specific fixed values. Used to drive production code through specific pathways.
-
-**Spy:** A stub that remembers facts about how it was called. Records which functions were called, how many times, with what arguments. The test can later query the spy to verify behavior.
-
-**True Mock:** A spy that knows what should happen. Has a `verify()` method that checks if everything went as expected. The test doesn't check what the mock spied on — it asks the mock if everything went right.
-
-**Fake:** A simulator with actual logic. Responds differently to different inputs. Can become complex maintenance nightmares — use sparingly, mostly for integration tests. Always write tests for your fakes.
-
-### When to Mock
-
-Mock across **dependency inversion boundaries**. The stuff on the other side of the boundary is what you mock out. If there's no boundary, prefer testing with real collaborators.
-
-### Mockist vs. Statist
-
-**Mockist (London School):** Emphasizes spying on algorithm implementations. Higher coupling to implementation, greater assurance algorithm works correctly. Tests may break when algorithm changes.
-
-**Statist (Chicago/Detroit School):** Emphasizes testing return values. Lower coupling to implementation, can refactor algorithms freely. Cannot guarantee all input combinations work.
-
-Neither a statist nor a mockist be — use the right tool for the situation. Use mockist style when testing across boundaries, statist style when not crossing boundaries.
-
-### Mocking Patterns
-
-**Test-Specific Subclass:** Derive from the class being tested, override methods you want to control. Useful for bypassing certain behaviors during tests.
-
-**Self-Shunt:** The test class itself implements service interfaces. Pass the test object to the class being tested. The test becomes its own spy. Powerful when testing classes with many external connections.
-
-**Humble Object:** Separate testable logic from hard-to-test boundary code. Make boundary objects "humble" — so simple they don't need testing. Move interesting logic to testable classes. Use at I/O boundaries, GUI boundaries, hardware interfaces.
-
-### On Mocking Frameworks
-
-Uncle Bob's perspective: mocks are easy to write by hand. Hand-written mocks have nice names that make tests readable and can be reused across tests. Framework syntax can obscure intent. Use frameworks when you need power — sealed/final classes, private access, legacy environments.
+| # | Check | Look for | Severity | Verification |
+|---|-------|----------|----------|-------------|
+| 1 | Three Laws compliance | Production code written without failing test first | 🔴 Red flag | Check git history: test commit should precede implementation commit |
+| 2 | Test tests behavior, not implementation | Test references private methods, internal data structures | 🔴 Red flag | Refactor internals without touching tests — do they still pass? |
+| 3 | Missing degenerate cases | No tests for null, empty, zero, boundary values | 🔴 Red flag | List inputs: null, empty, 0, 1, MAX, negative — are they covered? |
+| 4 | God Test | Single test with multiple Act-Assert sequences testing different behaviors | 🔴 Red flag | Count Act phases — if > 1, split into separate tests. Name each behavior independently. |
+| 5 | AAA structure | Mixed Arrange-Act-Assert within a single behavior test | 🟡 Warning | Each test has exactly one Act section |
+| 6 | F.I.R.S.T. violations | Slow test (I/O in unit test), test order dependency, non-deterministic | 🟡 Warning | Run tests in random order — do they all pass? |
+| 7 | Mock overuse | Mocking within the same module, not across boundaries | 🟡 Warning | Draw the dependency boundary — mocks should only appear at the boundary |
+| 8 | Test naming | Test name doesn't describe the scenario | 🟢 Improve | Read test name alone — do you know what it tests without reading the body? |
+| 9 | Magic values | Raw numbers/strings in assertions without explanation | 🟢 Improve | Extract to named constants reflecting requirements |
+| 8 | Magic values | Raw numbers/strings in assertions without explanation | 🟢 Improve | Extract to named constants reflecting requirements |
 
 ---
 
-## Test Anti-Patterns
+## Step 4: Refactoring Patterns
 
-### Fragile Tests
+### Pattern: Extract Composed Assertion
 
-Tests that break when making small production code changes. Caused by coupling tests to implementation details. If you make a small change to production code and a bunch of tests break, you have fragile tests. This violates the Open-Closed Principle.
+**Problem:** Multiple physical asserts checking one logical state, repeated across tests.
+**Steps:**
+1. Identify assertion groups that always appear together
+2. Extract into a named function: `assertHeatingState(hvac)`, `expectValidUser(response)`
+3. The function name should describe the LOGICAL assertion, not the physical checks
+4. Replace all occurrences
+5. Run tests
 
-### Tests That Know Too Much
+### Pattern: Introduce Test Hierarchy
 
-Testing internal structure instead of behavior. Knowing about classes/methods that are implementation details. Testing private functions directly. Solution: test through public interfaces only.
+**Problem:** Growing `beforeEach`/`setUp` with code only some tests need.
+**Steps:**
+1. Group tests by the context they need (e.g., "when user is admin", "when cart is empty")
+2. Create nested `describe`/`context` blocks (or equivalent in the test framework)
+3. Move setup code to the appropriate level
+4. Inner setup executes after outer setup
+5. Run tests
 
-### The Dirty Tests Story
+### Pattern: Replace Mock with Fake (at boundary)
 
-A client had an "anything goes in tests" policy. Tests became fragile and brittle. Simple changes broke many tests. Tests were thrown away bit by bit. Production code rotted because they couldn't refactor without the safety net. If you start throwing away tests, you can't trust your test suite — and without trust, tests are worthless.
+**Problem:** Complex mock setup that's brittle and hard to read.
+**Steps:**
+1. Identify the boundary being mocked
+2. Create a simple in-memory fake implementing the same interface
+3. Write tests for the fake itself
+4. Replace mock with fake in tests
+5. Run tests
 
-### Testing Private Functions
+### Pattern: Break Up God Test
 
-Generally don't test private functions — they're tested through the public interface. Private functions come from refactoring, so tests already cover them. If you MUST test a private function: testing trumps encapsulation — promote to package/protected visibility.
+**Problem:** Single test function with multiple Act-Assert sequences testing different behaviors.
+**Steps:**
+1. Identify each Act-Assert pair
+2. Extract each into its own test function with a descriptive name
+3. Move shared setup to `beforeEach`/`setUp`
+4. Run tests — count should increase, coverage should stay the same
 
----
+### Pattern: Decouple Test from Implementation
 
-## The Value of Tests
-
-### Tests Enable Refactoring
-
-We can't clean code until we eliminate the fear of change. Tests eliminate fear by providing a safety net. With tests, you can clean ugly code confidently. The only way to go fast is to keep the code clean — and the only way to keep it clean is to have tests.
-
-### Tests as Documentation
-
-Tests are code examples for the whole system. They show how to create objects, call APIs. Written in a language you understand, utterly unambiguous, and they cannot get out of sync with code because they execute. The perfect low-level design document.
-
-### Tests as Specification
-
-If the tests pass, we ship. Tests ARE the requirements. QA trusts the tests. Write the test that you'd want to read.
-
-### The Parable of the Two Disks
-
-If you had production code on one disk and tests on another, and one disk crashed: if you lose tests, you cannot recreate them from production code (trapdoor function). If you lose production code, you can recreate it from tests — probably better (second system effect). The tests are more critical than the production code. Production code without tests WILL rot.
-
-### TDD as Double-Entry Bookkeeping
-
-Everything is said twice: once in tests, once in production code. They follow separate but complementary execution pathways and meet at successful execution (green bar). Accounting uses double-entry for sensitive financial data. Software is equally sensitive to single-bit errors.
-
----
-
-## Test Design and SOLID
-
-**SRP:** Each test function tests one responsibility. If testing multiple responsibilities, split into separate test classes.
-
-**OCP:** Production code should be open for extension, tests closed for modification. Hide implementation details from tests — they should not know about internal class structure.
-
-**LSP:** Test-specific subclasses must conform to LSP. Don't cheat by making tests pass in derivatives.
-
-**ISP:** Tests shouldn't use interfaces with methods they don't call. Create test-specific interfaces if needed.
-
-**DIP:** Test code depends on production code (never the reverse). Use polymorphism to invert runtime dependencies while keeping source dependencies correct.
+**Problem:** Tests break when refactoring internals (not changing behavior).
+**Steps:**
+1. Identify what the test is actually verifying — input → output? Side effect? State change?
+2. Rewrite the test to verify through the public API only
+3. Remove references to private/internal methods
+4. If testing side effects: use a spy at the boundary, not deep inside
+5. Run tests — refactor the internals — tests should still pass
 
 ---
 
-## Rules of Simple Design (Kent Beck)
+## When NOT to Apply This Skill
 
-In priority order:
+Ignore strict TDD discipline when:
 
-1. **Pass all tests** — make it work
-2. **No duplication** — focus on structure
-3. **Express intent** — make it communicate
-4. **Minimize classes/methods** — optimize
-
-For tests, the order shifts: make tests **expressive first** (since you write tests first), then make them pass, then clean up.
-
----
-
-## When Reviewing Tests
-
-1. **Three Laws:** Was production code written only after a failing test? Small increments? Only enough code to pass the current test?
-2. **F.I.R.S.T.:** Fast? Independent? Repeatable? Self-validating? Timely?
-3. **Structure (AAA):** Clear Arrange/Act/Assert? Single logical assertion per test? No act-assert-act-assert patterns?
-4. **Mock Usage:** Mocking only across boundaries? Appropriate test double type? Not over-mocking?
-5. **Design:** Tests decoupled from implementation details? Won't break from internal refactoring? No knowledge of private structure?
-6. **Readability:** Test names describe behavior? Magic numbers replaced with meaningful constants? Tests readable as specifications?
+- **Spike/prototype:** You're exploring whether an approach is feasible. Write throwaway code, then rewrite with TDD once the design is clear. Never keep spike code.
+- **Trivial glue code:** A one-line function that delegates to a well-tested library. Don't test the wrapper; test the behavior it enables.
+- **UI layout/styling:** Pure visual concerns where the "test" is looking at the screen. Use snapshot tests or visual regression tools instead of unit TDD.
+- **Framework-imposed patterns:** Some frameworks generate code with specific structure (Rails scaffolds, Django admin). Test the customized behavior, not the generated boilerplate.
+- **Existing codebase with zero tests:** Don't try to retrofit TDD to the entire codebase. Use `/legacy-code` skill instead — add characterization tests, then apply TDD to new changes.
+- **Performance-critical hot paths:** When you need to profile and optimize, you may need to write the implementation first, benchmark, then add tests to lock in the optimized behavior.
 
 ---
 
-## Related Skills
+## K-Line History (Lessons Learned)
 
-- `/naming` — intention-revealing names in tests and production code
-- `/functions` — clean function structure during refactor phase
-- `/solid` — SOLID principles applied to test design
-- `/acceptance-testing` — acceptance TDD, testing pyramid, BDD
-- `/clean-code-review` — comprehensive review after TDD cycle completes
+> This section should grow over time with actual project experience.
+
+### What Worked
+- **PHP**: Starting with degenerate test cases (empty list, null input) consistently uncovered missing guard clauses and edge cases before they became production bugs.
+- **TypeScript**: Writing tests that verify return values and callbacks first made refactoring internals safe and fast.
+- Keeping cycle time under 3 minutes made refactoring feel safe — you never lose more than 3 minutes of work.
+- Writing test names as sentences — **PHP**: `testReturnsEmptyWhenNoItemsMatchFilter()`, **TypeScript**: `should return loading state when data is fetching` — served as living documentation.
+- Using stair-step tests to bootstrap new modules eliminated "blank page" paralysis.
+
+### What Failed
+- Trying to TDD a complex algorithm top-down led to a 30-minute RED phase with no progress. Bottom-up (smallest subproblem first) worked better.
+- **PHP**: Over-mocking database interactions without testing with a real in-memory database made tests pass but missed N+1 queries and transaction bugs.
+- **TypeScript**: Over-mocking dependencies made tests pass but missed integration issues. Testing with real or near-real dependencies > mocking everything.
+- Writing tests for generated code created a maintenance burden with near-zero value.
+- Skipping the REFACTOR phase "just this once" always led to more skipping. The test suite became its own legacy code within weeks.
+
+### Edge Cases
+- **PHP event-driven systems:** The RED phase needs to test event dispatch and listeners. Use test doubles for events, but test the real event flow in integration tests.
+- **TypeScript async/promises:** The RED phase often involves `waitFor()` or async/await to verify state updates. Use test utilities appropriate to the framework.
+- **Database-dependent logic (PHP):** Use an in-memory SQLite database for tests or test transactions that roll back. Don't mock database interactions unless necessary — the mock won't catch relationship or query bugs.
+- **Third-party API integration:** TDD the adapter interface, then use contract tests or recorded HTTP cassettes (VCR, MSW) for the real API. Don't TDD against a live external service.
+- **TypeScript async/await:** TDD the sequential logic first, then add async tests as a separate concern. Test data fetching with mocked HTTP for predictable async behavior.
+
+---
+
+## Communication Style
+
+When guiding TDD:
+
+1. **Show the cycle:** Always show RED (failing test), GREEN (minimal code), REFACTOR (cleanup) — in the project's actual language and test framework
+2. **Name the technique:** "I'm using Triangulation here because..." or "This is a stair-step test to bootstrap the class"
+3. **Be direct about shortcuts:** "I'm skipping the test for this one-line delegation because..." (and explain why it's justified)
+4. **Show test output:** Include the test run command and its pass/fail result
+5. **Prioritize:** When reviewing existing tests, fix 🔴 issues first, then 🟡, then 🟢

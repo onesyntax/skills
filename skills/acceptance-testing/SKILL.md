@@ -1,401 +1,398 @@
 ---
 name: acceptance-testing
 description: >-
-  Guide acceptance testing practices using Uncle Bob's ATDD teachings. Activates when
-  writing acceptance tests, discussing testing pyramid, BDD, acceptance criteria,
-  or when the user mentions acceptance testing, ATDD, testing pyramid, fixtures,
-  Given/When/Then, or stakeholder communication through tests.
+  Operational guide for acceptance testing using ATDD principles. Activates when
+  writing acceptance tests, implementing features with acceptance criteria,
+  fixing acceptance test suites, or designing architecture for testability.
+model: opus
+delegates-to: [tdd, architecture, solid, components]
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob
 argument-hint: [feature or module to test]
 ---
 
 # Acceptance Testing
 
-Follow this workflow when writing acceptance tests, defining business requirements as executable specifications, or bridging the communication gap between business and developers.
+## K-Line History
 
-For extended examples (fixture implementations, tool-specific walkthroughs, full feature examples), read `references/extended-examples.md`.
-
-## Workflow Steps
-
-1. **Identify business requirements and actors** — who are the stakeholders? What behavior is being requested?
-2. **Write acceptance criteria in Given/When/Then** — BEFORE any code is written
-3. **Create fixtures** — thin adapter code connecting tests to production code
-4. **Implement feature using TDD** — acceptance tests are the outer loop, unit tests are the inner loop
-5. **Verify acceptance tests pass** — when they pass, the feature meets its Definition of Done
-6. **Add to regression suite** — maintain the suite in CI
+- **Acceptance tests as outer loop**: Run after WHEN designing a feature with acceptance criteria.
+- **Fixture pattern**: Use WHEN acceptance tests exist but lack testable architecture.
+- **ATDD before code**: Run WHEN picking up a user story.
+- **Pyramid balance**: Run WHEN test suite grows; check ratio before adding more UI tests.
+- **Thin fixture pattern**: Extract business logic into production code; keep fixtures as pure adapters.
 
 ---
 
-## What Are Acceptance Tests?
+## Step 0: Detect Context
 
-Acceptance tests are the ONE kind of test that checks whether software meets BUSINESS expectations. Unlike unit tests (written by developers for developers), acceptance tests verify that the system does what the business actually asked for.
+Before applying acceptance testing strategy, detect the current state:
 
-They provide a shared, unambiguous language that bridges the business domain and technical implementation. They are the executable specification of what "done" means.
+1. **Test Framework**
+   - **PHP:** Check for `phpunit.xml`, test files in `tests/` directories, test runner in composer scripts.
+   - **TypeScript:** Check for `jest.config.*`, test files matching `*.test.ts` or `*.test.tsx`, test runner in package.json, Cypress or Playwright config.
+   - Language determines syntax and tooling, not strategy.
 
-The fundamental problem acceptance tests solve is communication. Business people understand the big picture but lack technical detail. Developers understand the software but often misunderstand the business domain. Acceptance tests force precision and shared understanding BEFORE development begins.
+2. **Architecture Testability**
+   - Can tests plug in below the UI (controller/API layer)?
+   - If no: flag architectural barrier before proceeding.
+   - If yes: fixtures can delegate directly to use cases.
 
-Without acceptance tests, the typical failure mode is: business writes vague requirements, developers fill in gaps with assumptions, QA cannot tell when something is "correct" because nobody defined it, demos reveal misunderstandings too late, and rework consumes the schedule. Acceptance tests break this cycle.
+3. **Existing Acceptance Tests**
+   - Count: how many? (0, <10, 10-50, 50+)
+   - Patterns: Given/When/Then? BDD? Ad-hoc?
+   - Fixture quality: thin adapters or logic-heavy?
+   - In CI pipeline? Running on every commit?
 
----
-
-## The Testing Pyramid
-
-```
-          /\
-         /  \
-        / UI \
-       /______\
-      /        \
-     /Acceptance \
-    /______________\
-   /                \
-  /   Functional     \
- /____________________\
-/                      \
-/      Unit Tests       \
-/________________________\
-```
-
-**Unit Tests (bottom):** The foundation — thousands run per second. Test individual functions and classes in isolation. Written by developers for developers.
-
-**Functional Tests (lower-middle):** Test multiple units working together. Verify components integrate correctly at a technical level. Still developer-facing.
-
-**Acceptance Tests (middle):** Check BUSINESS expectations, not technical correctness. Readable by non-developers: QAs, product owners, BAs, designers. NOT dependent on the UI. Automated and part of the regression suite.
-
-**UI / System Tests (top):** Just a small handful — the most expensive and slowest. Test the full stack through the actual user interface. Fragile because they depend on everything. Should be very limited in ambition.
-
-### The Ice Cream Cone Anti-Pattern
-
-The inverted pyramid — tons of UI tests at the top, few or no unit tests at the bottom:
-
-```
-  ________________________
- /                        \
-/     Tons of UI Tests     \
-\__________________________/
- \                        /
-  \   Some Acceptance    /
-   \____________________/
-    \                  /
-     \  Few Functional/
-      \______________/
-       \            /
-        \ No Unit  /
-         \________/
-```
-
-Teams with the ice cream cone end up with massive, fragile UI test suites that break constantly, slow feedback loops (hours instead of seconds), enormous maintenance burden, and false confidence — tests pass but business requirements are still wrong.
+4. **Development Process**
+   - Are acceptance tests written BEFORE code? (ATDD outer loop)
+   - Or written AFTER code? (verification, not specification)
+   - QA involved in writing criteria? Or only reviewing?
 
 ---
 
-## The Problem with UI Testing
+## Step 1: Classify the Situation
 
-UI tests depend on literally everything: business rules, database, network, rendering, layout. The UI is the part of the system MOST likely to change. A single CSS change or redesign breaks the entire suite.
-
-When teams build massive UI test suites, they create "automation monsters" — sprawling, fragile suites that take hours to run, break for reasons unrelated to business logic, and consume more effort to maintain than they save.
-
-**The right approach:** Test business behavior BELOW the UI surface. Use acceptance tests that plug in at the controller/API level. Reserve UI tests for a small handful of critical user journeys. Think of acceptance tests as "an alternative UI" for the system.
-
----
-
-## ATDD: Acceptance Test-Driven Development
-
-ATDD is the OUTER loop of development. TDD is the INNER loop.
-
-```
-Business Requirement
-       │
-       ▼
-Write Acceptance Test (OUTER LOOP)
-       │
-       ▼
-┌──────────────────────┐
-│  TDD Cycle (INNER)   │
-│  RED → GREEN →       │
-│  REFACTOR → REPEAT   │
-└──────────────────────┘
-       │
-       ▼
-Acceptance Test Passes
-       │
-       ▼
-Add to Regression Suite
-```
-
-**TDD** checks the PROGRAMMER'S understanding — "Does the code do what I think it should?"
-**ATDD** checks BUSINESS expectations — "Does the system do what the business actually needs?"
-
-Both are necessary. A system can pass all unit tests and still be the wrong product.
-
-### When to Write Acceptance Criteria
-
-Write acceptance criteria "just in time" — when a story is picked up for development, NOT during sprint planning or backlog grooming.
-
-**Why not during planning?** Requirements evolve between planning and implementation. Writing criteria too early wastes effort on stories that may never be built. The conversation should happen close to implementation.
-
-**Why not after coding?** Defeats the purpose — acceptance tests DEFINE done, they do not verify after the fact. Developers fill gaps with assumptions that may be wrong. Rework is far more expensive than getting it right upfront.
-
-### Definition of Done
-
-A feature is done when all acceptance tests pass, all unit tests pass, all UI tests (if any) pass, and code meets Clean Code standards. The acceptance tests ARE the definition of done. There is no ambiguity.
+| Situation | Action |
+|-----------|--------|
+| **New feature with acceptance criteria** | Go to Step 2, Rule 1 (Given/When/Then). Write tests BEFORE code. |
+| **Reviewing existing acceptance tests** | Go to Step 3 (Review Checklist). Check for UI references, fixture quality, precision. |
+| **Broken/flaky acceptance test suite** | Go to Step 4 (Refactoring Patterns). Diagnose root cause: flaky fixture? Ambiguous criteria? Over-mocking? |
+| **Architecture blocks acceptance testing** | Go to Step 2, Rule 2 (UI Independence). Restructure to allow controller-level access. |
+| **Bug fix (not new feature)** | May not need acceptance test. Use characterization test only if no reproduction test exists. |
 
 ---
 
-## Writing Good Acceptance Tests
+## Step 2: Apply Decision Rules
 
-### Properties
+### Rule 1: Given/When/Then Structure
 
-1. **Readable by everyone** — QAs, product owners, BAs, designers, and developers can all understand them
-2. **Unambiguous** — no room for misinterpretation; if two people could read it differently, rewrite it
-3. **Automatable** — can be executed by a machine without human intervention
-4. **UI-independent** — do NOT reference buttons, pages, screens, or UI elements
-5. **Business-focused** — test what the system DOES, not how it looks
+**WHEN:** Writing ANY acceptance test (new feature, bug reproduction, regression).
+**WHEN NOT:** Writing performance/load tests, stress tests, or infrastructure tests.
 
-### Good vs. Bad
+**Pattern:**
+- **Given:** Setup preconditions. Use business language. Each Given = one fact.
+- **When:** One logical action. (Multiple "When" = split into separate tests.)
+- **Then:** Expected outcomes. Verifiable. Observable. Specific values, not vague assertions.
 
-**Bad — references UI:**
+**Red Flags:**
+- Multiple actions in a single When ❌
+- Ambiguous Then clauses ❌
+- Technical jargon instead of business language ❌
+- "Should work correctly" (vague) vs. "status is CONFIRMED" (precise) ✓
+
+---
+
+### Rule 2: UI Independence
+
+**WHEN:** Every acceptance test. Tests must NOT reference UI elements.
+**WHEN NOT:** UI/E2E tests are a separate layer (small handful, top of pyramid).
+
+**Pattern:**
+- Acceptance test plugs in at **controller/API level** (same entry point as UI).
+- Fixture translates business concepts → system calls.
+- Tests are "an alternative UI" — system behaves identically whether driven by human or fixture.
+
+**Red Flags:**
+- References to buttons, pages, forms, CSS selectors ❌
+- "Click the 'Submit' button" ❌
+- Navigation to URLs as test precondition ❌
+- UI element assertions ✓ → Business assertion at controller level
+
+**Fix:** Rewrite test at controller layer. Move UI references to separate E2E test.
+
+**PHP Example:**
+```php
+// Acceptance test at controller level (not UI):
+public function testUserAuthenticatesWithValidCredentials(): void {
+    $this->userRepository->save(new User(['email' => 'admin@example.com']));
+    $response = $this->authController->login(new LoginRequest('admin@example.com', 'password'));
+    $this->assertTrue($response->isSuccess() && $response->token() !== null);
+}
 ```
+
+---
+
+### Rule 3: Thin Fixture
+
+**WHEN:** Fixture code exists and acceptance tests run.
+**WHEN NOT:** Simple in-memory tests with no adapter needed (pure unit tests).
+
+**Pattern:**
+- Fixtures = pure adapters. NO business logic. NO conditionals. NO calculations.
+- One-to-one mapping: test concept → system call.
+- Example: "premium customer" → `Customer(tier: PREMIUM)`. Translation only.
+
+**Red Flags:**
+- Conditionals in fixture ❌
+- Calculations (e.g., shipping cost) in fixture ❌
+- Complex setup logic in fixture ❌
+- If/else branches ❌
+
+**Fix:** Move logic to production code (service, entity). Fixture stays as thin translator.
+
+**PHP Example:**
+```php
+// Before: business logic in test setup
+$discount = $customer->tier === 'PREMIUM' ? 0.1 : 0;
+$total = array_sum(array_column($items, 'price')) * (1 - $discount);
+
+// After: fixture delegates to service
+$result = $this->orderService->submit($orderRequest);
+```
+
+---
+
+### Rule 4: ATDD Outer Loop
+
+**WHEN:** Starting a new feature (user story pickup).
+**WHEN NOT:** Bug fixes with clear reproduction. (Use step-to-reproduce, not acceptance test.)
+
+**Sequence:**
+1. Pick up story; collaborate: acceptance criteria (Given/When/Then).
+2. Write failing acceptance test (RED).
+3. TDD loop: unit tests + code (GREEN → REFACTOR).
+4. Acceptance test passes = feature done.
+
+**Anti-pattern:** Write code first, tests after. Tests verify, not define.
+
+---
+
+### Rule 5: Acceptance Test Timing
+
+**WHEN:** Write BEFORE code. During story pickup. With BA/QA present.
+**WHEN NOT:** Characterization tests (legacy code with no tests). Those are POST-code.
+
+**Discipline:**
+- Tests are the **specification**, not verification.
+- Written during **"three amigos"** session: developer, tester, business.
+- Accepted by business BEFORE coding starts.
+- Prevents rework: "That's not what we meant" discovered too late.
+
+---
+
+### Rule 6: Pyramid Balance
+
+**WHEN:** Test suite exists. Check before adding more tests.
+**WHEN NOT:** New project (build foundation first: units, then acceptance, then UI).
+
+**Ideal Ratio (by count):** 70% unit : 20% acceptance : 10% UI.
+**Anti-pattern (Ice Cream Cone):** 10% unit : 20% acceptance : 70% UI.
+
+**Assessment (PHP + TypeScript):**
+```bash
+# Count tests in each layer
+find . -path "*/tests/*" -name "*Test.php" | wc -l              # PHP unit/integration tests
+find . -name "*.test.ts" -o -name "*.test.tsx" | wc -l         # TypeScript component tests
+find . -name "*.e2e.ts" -o -name "*.spec.ts" -path "*cypress*" | wc -l  # E2E
+```
+
+**Action:** If pyramid is inverted (UI heavy), migrate high-cost UI tests down to acceptance or unit.
+
+---
+
+## Step 3: Review Checklist
+
+### Acceptance Test Quality
+
+| Check | Severity | Fix |
+|-------|----------|-----|
+| Test references UI elements (buttons, pages, CSS selectors) | 🔴 CRITICAL | Rewrite at controller layer. Move UI references to E2E test. |
+| Multiple "When" actions in one test | 🔴 CRITICAL | Split into separate tests. One logical action per test. |
+| Ambiguous Given/When/Then (could be interpreted multiple ways) | 🔴 CRITICAL | Rewrite with specific values. "Order confirmed" → "status = CONFIRMED, total = $50.99". |
+| No acceptance tests for user-facing feature | 🔴 CRITICAL | Write ATDD criteria before code. |
+| Acceptance test written AFTER code | 🟡 MAJOR | Document why (legacy code?). Plan to move to pre-code for future work. |
+| Given/When/Then mixes business and technical language | 🟡 MAJOR | Rewrite in business terms. Fixture handles translation. |
+| Acceptance tests not in CI pipeline | 🟡 MAJOR | Add to CI. Acceptance tests must run on every commit. |
+
+### Fixture Quality
+
+| Check | Severity | Fix |
+|-------|----------|-----|
+| Business logic in fixture code | 🔴 CRITICAL | Extract to use case, entity, or service. Fixture is adapter only. |
+| Fixture sets up complex state through multiple system calls | 🔴 CRITICAL | Use test doubles or builder for setup. Simplify to one call per Given. |
+| Fixture references UI (DOM, CSS selectors, page objects) | 🔴 CRITICAL | Rewrite to use API/controller directly. |
+| Fixture assumes specific implementation details | 🟡 MAJOR | Decouple from implementation. Use contracts/interfaces. |
+| Over-mocking in fixture | 🟡 MAJOR | Mock only external dependencies (DB, HTTP). Exercise real business logic. |
+
+### Architecture & Process
+
+| Check | Severity | Fix |
+|-------|----------|-----|
+| System not testable without going through UI | 🔴 CRITICAL | Refactor to expose controller/API layer. Dependencies must be injectable. |
+| Dependencies not injectable | 🔴 CRITICAL | Apply Dependency Inversion. Fixtures need to substitute test doubles. |
+| Business logic lives in UI layer | 🔴 CRITICAL | Migrate business logic to entities/use cases. UI is thin adapter. |
+| Tests pass but feature doesn't match business requirements | 🟡 MAJOR | Acceptance criteria were ambiguous. Rewrite with business involvement. |
+| Test suite slow (>1 minute for all acceptance tests) | 🟡 MAJOR | Migrate from DB/HTTP to in-memory test doubles. Parallel execution. |
+| QA not involved in writing criteria | 🟡 MAJOR | Shift QA to specification (ATDD) phase, not just verification. |
+
+---
+
+## Step 4: Refactoring Patterns
+
+### Pattern 1: Extract UI from Acceptance Test
+
+**Symptom:** Acceptance test references buttons, pages, form fields, CSS selectors.
+
+**Cause:** Test written as UI automation instead of business specification.
+
+**Solution:**
+1. Identify the business intent (what outcome does clicking the button achieve?).
+2. Rewrite test at controller/API level.
+3. Move UI references to separate E2E test.
+
+**Before:**
+```gherkin
 Given I am on the login page
 When I type "admin" in the username field
 And I click the "Login" button
 Then I should see the dashboard page
 ```
 
-**Good — tests business behavior:**
-```
-Given a registered user with username "admin"
+**After (Acceptance Test):**
+```gherkin
+Given a registered user "admin"
 When the user authenticates with valid credentials
-Then the system grants access to the user's account
+Then the user gains access to their account
 ```
 
-**Bad — ambiguous:**
+**After (Separate E2E Test):**
+```gherkin
+Given the login page is displayed
+When the user enters "admin" in the username field
+And clicks the "Login" button
+Then the dashboard page loads
 ```
+
+---
+
+### Pattern 2: Thin the Fixture
+
+**Symptom:** Fixture contains conditionals, calculations, setup logic.
+
+**Cause:** Business logic crept into adapter code.
+
+**Solution:**
+1. Identify all non-translation code in fixture.
+2. Move calculations/conditionals to production code (service, entity, domain model).
+3. Fixture becomes pure mapping: test concept → system call.
+
+**Before (PHP):**
+```php
+class OrderFixture {
+    public function submitOrder(): void {
+        // WRONG: Business logic in fixture
+        $discount = $this->customer->tier === "PREMIUM" ? 0.1 : 0;
+        $subtotal = array_sum(array_column($this->items, 'price'));
+        $total = $subtotal * (1 - $discount);
+        $this->orderService->submit($total);
+    }
+}
+```
+
+**After (PHP):**
+```php
+class OrderFixture {
+    public function submitOrder(): void {
+        // RIGHT: Pure delegation
+        $this->orderService->submit($this->orderRequest);
+    }
+}
+// Discount calculation moves to OrderService::calculateTotal()
+```
+
+---
+
+### Pattern 3: Convert Ambiguous to Precise
+
+**Symptom:** Given/When/Then could be interpreted multiple ways.
+
+**Cause:** Test written too abstractly. Business language without concrete values.
+
+**Solution:**
+1. Identify ambiguous words: "correct", "appropriate", "valid", "properly".
+2. Add concrete values: amounts, status codes, counts.
+3. Rewrite so only one interpretation is possible.
+
+**Before (Business-facing, ambiguous):**
+```gherkin
 Given a customer places an order
-Then the order should be processed correctly
+When the order is processed correctly
+Then the order should be valid
 ```
 
-**Good — precise:**
-```
-Given a customer with a verified shipping address
+**After (Business-facing, precise):**
+```gherkin
+Given a customer with verified shipping address
 And an order containing 3 items totaling $45.00
-When the order is submitted with standard shipping
-Then the order status is set to "CONFIRMED"
-And the shipping cost is calculated as $5.99
+When the order is submitted
+Then the order status is "CONFIRMED"
+And the shipping cost is $5.99
 And the order total is $50.99
 ```
 
-### The Given/When/Then Pattern
+**TypeScript Example (acceptance-level service test):**
+```typescript
+import { AuthService } from './auth-service';
 
-- **Given** — establishes the preconditions (the state of the world before the action)
-- **When** — describes the action being performed (one logical action per test)
-- **Then** — specifies the expected outcomes (observable, verifiable results)
+test('user authenticates with valid credentials', async () => {
+    const authService = new AuthService(userRepository, tokenGenerator);
 
-Each section should use business language, not technical jargon.
+    const result = await authService.authenticate({
+        email: 'admin@example.com',
+        password: 'password'
+    });
+
+    expect(result.isSuccess()).toBe(true);
+    expect(result.token()).toBeDefined();
+});
+```
 
 ---
 
-## The Fixture Pattern
+### Pattern 4: Add Acceptance Outer Loop to Existing Feature
 
-Fixtures are thin adapter code that connects acceptance tests to production code. They sit between the test specification and the system under test.
+**Symptom:** Feature coded but no acceptance tests.
 
-```
-┌─────────────────────┐
-│   Acceptance Test    │  (Human-readable specification)
-│   (Given/When/Then)  │
-└─────────┬───────────┘
-          │
-          ▼
-┌─────────────────────┐
-│      Fixture         │  (Thin adapter — translation only)
-│  (Glue Code Layer)   │
-└─────────┬───────────┘
-          │
-          ▼
-┌─────────────────────┐
-│   Production Code    │  (Controllers, Use Cases, Entities)
-│   (Below the UI)     │
-└─────────────────────┘
-```
-
-### Fixture Design Principles
-
-1. **Thin adapters** — fixtures contain NO business logic, only translation and delegation
-2. **Simple mapping** — convert human-friendly test concepts into technical system calls
-3. **Same level as controller** — fixtures plug in at the same level as the UI controller, bypassing the UI entirely
-4. **No UI dependency** — acceptance tests are "an alternative UI" for the system
-5. **Refactorable** — start simple, refactor so the fixture becomes a thin adapter over time
-
-### Concept Translation
-
-Tests use human-friendly concepts while code uses technical ones. The fixture handles this conversion:
-
-```
-Test says:              Fixture converts to:
-"a premium customer"    → Customer(tier: PREMIUM)
-"standard shipping"     → ShippingMethod.STANDARD
-"order is confirmed"    → status == CONFIRMED
-"$45.00"                → Money(4500, USD)
-```
-
-The fixture is the ONLY place this translation happens. Keep it simple and mechanical.
-
-### Fixture Example
-
-```
-// Fixture — thin adapter connecting test to system
-OrderProcessingFixture:
-    orderService: OrderService
-    request: OrderRequest
-    response: OrderResponse
-
-    // Given — set up preconditions
-    setCustomerAddressVerified(verified):
-        request.addressVerified = verified
-
-    setOrderItems(count, total):
-        request.itemCount = count
-        request.subtotal = parseMoney(total)
-
-    // When — execute the action
-    submitOrder(shippingMethod):
-        request.shipping = parseShippingMethod(shippingMethod)
-        response = orderService.submit(request)
-
-    // Then — query results
-    orderStatus(): return response.status
-    shippingCost(): return formatMoney(response.shippingCost)
-    orderTotal(): return formatMoney(response.total)
-    rejectionReason(): return response.rejectionReason
-```
-
-No business logic in the fixture. Only translation (parseMoney, parseShippingMethod) and delegation (orderService.submit).
+**Solution:** Write acceptance test (will PASS immediately). Test becomes regression guard. For future features: start with acceptance test RED.
 
 ---
 
-## BDD and Acceptance Testing
+### Pattern 5: Fix Pyramid Balance
 
-BDD (Behavior-Driven Development) provides a less technical vocabulary for describing software behavior. The Given/When/Then format standardizes the specification language and makes tests accessible to non-developers.
+**Symptom:** Test suite inverted (mostly UI tests, few unit tests).
 
-BDD encompasses more than acceptance testing alone — collaborative specification (three amigos: developer, tester, business), living documentation, outside-in development, and acceptance test automation. Acceptance testing focuses specifically on automation and unambiguous "done" criteria.
-
-### Common Misuse of BDD Tools
-
-BDD tools are frequently misused as UI automation wrappers. This completely misses the point.
-
-**Misuse — UI test in disguise:**
-```
-Given I navigate to "/orders/new"
-When I fill in "customer_id" with "CUST-001"
-And I click the "Add Item" button 3 times
-And I click "Submit Order"
-Then the page should contain "Order Confirmed"
-```
-
-**Correct — tests business behavior:**
-```
-Given a registered customer "CUST-001"
-And 3 items in the order totaling $45.00
-When the order is submitted
-Then the order is confirmed with total $50.99
-```
-
-The collaborative intent of BDD is lost when it becomes a UI automation wrapper.
+**Solution:** Count tests per layer. Migrate high-cost UI tests down to acceptance or unit level. Incremental replacement: write acceptance + unit tests, then delete UI test.
 
 ---
 
-## Architecture for Testability
+## When NOT to Apply
 
-The architecture MUST allow access to the core software WITHOUT going through the UI, database, or network. If acceptance tests cannot plug in below the UI, the architecture has a serious design flaw.
-
-```
-┌─────────────────────────────────────────────┐
-│                    UI                        │
-│  ┌───────────────────────────────────────┐  │
-│  │            Controller                  │  │
-│  │  ┌───────────────────────────────┐    │  │
-│  │  │         Use Cases              │    │  │
-│  │  │  ┌───────────────────────┐    │    │  │
-│  │  │  │      Entities          │    │    │  │
-│  │  │  └───────────────────────┘    │    │  │
-│  │  └───────────────────────────────┘    │  │
-│  └───────────────────────────────────────┘  │
-│                                              │
-│  ← Fixture plugs in HERE (same as UI)       │
-└─────────────────────────────────────────────┘
-```
-
-**Key principles:**
-- Fixture plugs in at controller level — bypassing the UI entirely
-- No business logic in UI layer — if logic lives in the UI, acceptance tests cannot reach it
-- Dependencies must be injectable — fixtures need to substitute test implementations
-- Acceptance tests = an alternative UI — the system should work identically whether driven by a human or by a fixture
-
-Clean Architecture directly supports ATDD: Use Cases define clear boundaries that fixtures can call, Dependency Inversion allows fixtures to inject test doubles, Entities contain business rules testable without infrastructure, and Interface Adapters provide the controller-level API that fixtures plug into.
+1. **Performance/Load Tests** — Not acceptance tests. Use separate benchmarking framework.
+2. **Infrastructure Tests** — Database connectivity, cache warmup. Use separate layer.
+3. **Bug Fix with Clear Reproduction** — If bug is reproducible with unit test, prefer unit test. Acceptance test may be overkill.
+4. **Unstable Architecture** — If system cannot be tested without going through UI, fix architecture first (Rule 2). Acceptance tests will be brittle until then.
+5. **One-Off Spike/Prototype** — Acceptance tests require discipline. Prototypes don't need them.
 
 ---
 
-## The Transformed Role of QA
+## Communication Style
 
-### Traditional QA (The Bottleneck)
+**Direct. Not prescriptive. Evidence-based.**
 
-Developers write code, throw it over the wall to QA, QA tests manually under time pressure, bugs are found late, fixes are expensive, QA becomes a bottleneck at the end of every sprint.
+❌ "You should write acceptance tests." (Vague.)
+✓ "Given/When/Then format removed ambiguity in your acceptance criteria. 'Order confirmed' → 'status = CONFIRMED'. One test now, instead of rework later." (Specific, outcome-focused.)
 
-### ATDD QA (The Collaborator)
+❌ "Fixtures are thin adapters." (Teaching.)
+✓ "Discount logic in your fixture should move to OrderService.calculateTotal(). Fixture is pure translator: order concept → system call." (Action-oriented.)
 
-QA participates BEFORE development, writing acceptance criteria. Developers implement against those criteria using TDD. When acceptance tests pass, the feature is done. QA shifts focus to exploratory testing — finding edge cases that automated tests miss. QA is no longer a bottleneck.
-
----
-
-## Review Checklist
-
-When reviewing acceptance tests:
-
-**Test Quality:**
-- [ ] Acceptance criteria written BEFORE code
-- [ ] Tests readable by all stakeholders (not just developers)
-- [ ] No UI element references in acceptance tests
-- [ ] Every Given/When/Then is precise and unambiguous
-- [ ] One logical action per test (one When)
-
-**Fixture Quality:**
-- [ ] Fixtures are thin adapters with NO business logic
-- [ ] Fixtures plug in at controller/API level, not through UI
-- [ ] Concept translation is simple and mechanical
-
-**Architecture:**
-- [ ] System accessible without going through UI
-- [ ] Dependencies are injectable for test doubles
-- [ ] Business rules are in entities/use cases, not in UI layer
-
-**Process:**
-- [ ] Tests automated and fast enough for CI
-- [ ] Tests added to regression suite
-- [ ] QA involved in writing criteria, not just verifying after
-
----
-
-## Common Pitfalls
-
-**Testing through the UI.** Acceptance tests should bypass the UI and test business behavior directly. UI tests are the top of the pyramid — a small handful, not the primary testing strategy.
-
-**Writing tests after code.** Acceptance criteria must be defined BEFORE development begins. Writing them after defeats their purpose — they DEFINE done, they do not verify after the fact.
-
-**Ambiguous criteria.** If two people could interpret a test differently, it is not precise enough. Every acceptance criterion must have exactly one interpretation.
-
-**Business logic in fixtures.** Fixtures are thin adapters. If you find conditionals, calculations, or business rules in fixture code, something is wrong — that logic belongs in production code.
-
-**Using BDD tools as UI automation wrappers.** Cucumber, FitNesse, and similar tools are for specifying business behavior, not for driving Selenium. The collaborative intent is lost when they become UI test frameworks.
-
-**Over-mocking.** Acceptance tests should exercise real business logic. If you mock so much that the test only verifies the mocks themselves, the test proves nothing about the system.
-
-**Demo-driven development.** Showing incomplete work to stakeholders without passing acceptance tests. Demos should only happen when acceptance tests pass — they ARE the definition of done.
+❌ "Test through the controller, not the UI." (Rule.)
+✓ "Your acceptance test references login form and dashboard page. That couples the test to UI changes. Rewrite at the authentication boundary (controller): 'user authenticates' → 'user gains access'. UI can change; test stays stable." (Why + how.)
 
 ---
 
 ## Related Skills
 
-- **/tdd** — Inner loop of development; acceptance tests are the outer loop that defines "done"
-- **/architecture** — Clean Architecture enables testability by separating business rules from delivery mechanisms
-- **/solid** — Dependency Inversion enables fixture injection and test double substitution
-- **/components** — Component boundaries define where fixtures plug in
-- **/professional** — Professional responsibility to communicate unambiguously through executable specifications
+- **/tdd** — TDD is the inner loop; acceptance tests are the outer loop that defines "done".
+- **/architecture** — Clean Architecture (layers, use cases, entities) enables acceptance test design.
+- **/solid** — Dependency Inversion allows fixtures to inject test doubles.
+- **/components** — Component boundaries define where fixtures plug in.
+- **/refactor-suggestion** — Use when acceptance test fixture grows too complex.
